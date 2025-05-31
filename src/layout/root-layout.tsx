@@ -2,8 +2,8 @@ import { Outlet } from 'react-router-dom'
 
 export default function Layout() {
     return (
-        <div className="min-h-screen">
+        <main className="container py-6">
             <Outlet />
-        </div>
+        </main>
     )
-} 
+}

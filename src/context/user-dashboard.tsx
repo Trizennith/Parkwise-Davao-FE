@@ -2,7 +2,7 @@ import { createContext, useContext, useState, ReactNode, FC, useMemo, useCallbac
 import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-export type DashboardSection =
+export type UserDashboardSection =
     | 'overview'
     | 'parking-lots'
     | 'reservations'
@@ -11,28 +11,28 @@ export type DashboardSection =
     | 'admin-settings'
     | 'admin-reports'
 
-export interface DashboardHeaderTitle {
+export interface UserDashboardHeaderTitle {
     title: string
     description: string
 }
 
-interface DashboardContextType {
-    activeSection: DashboardSection
+interface UserDashboardContextType {
+    activeSection: UserDashboardSection
     isAdmin: boolean
-    headerTitle: DashboardHeaderTitle
-    updateSection: (section: DashboardSection) => void
-    setActiveSection: (section: DashboardSection) => void
+    headerTitle: UserDashboardHeaderTitle
+    updateSection: (section: UserDashboardSection) => void
+    setActiveSection: (section: UserDashboardSection) => void
     setIsAdmin: (isAdmin: boolean) => void
 }
 
-const DashboardContext = createContext<DashboardContextType | undefined>(undefined)
+const UserDashboardContext = createContext<UserDashboardContextType | undefined>(undefined)
 
-const DashboardProvider: FC<{ children: ReactNode }> = ({ children }) => {
+const UserDashboardProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const location = useLocation()
     const navigate = useNavigate()
-    const [activeSection, setActiveSection] = useState<DashboardSection>('overview')
+    const [activeSection, setActiveSection] = useState<UserDashboardSection>('overview')
     const [isAdmin, setIsAdmin] = useState(false)
-    const [headerTitle, setHeaderTitle] = useState<DashboardHeaderTitle>({
+    const [headerTitle, setHeaderTitle] = useState<UserDashboardHeaderTitle>({
         title: '',
         description: ''
     })
@@ -47,7 +47,7 @@ const DashboardProvider: FC<{ children: ReactNode }> = ({ children }) => {
     // Update activeSection based on URL search parameter
     useEffect(() => {
         const searchParams = new URLSearchParams(location.search)
-        const section = searchParams.get('section') as DashboardSection
+        const section = searchParams.get('section') as UserDashboardSection
 
         if (section && Object.keys(sectionTitles).includes(section)) {
             setActiveSection(section)
@@ -59,7 +59,7 @@ const DashboardProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
     // Function to update section and URL
     const updateSection = useCallback(
-        (section: DashboardSection) => {
+        (section: UserDashboardSection) => {
             setActiveSection(section)
             const searchParams = new URLSearchParams(location.search)
             searchParams.set('section', section)
@@ -72,7 +72,7 @@ const DashboardProvider: FC<{ children: ReactNode }> = ({ children }) => {
     )
 
     return (
-        <DashboardContext.Provider
+        <UserDashboardContext.Provider
             value={useMemo(
                 () => ({
                     activeSection,
@@ -86,19 +86,19 @@ const DashboardProvider: FC<{ children: ReactNode }> = ({ children }) => {
             )}
         >
             {children}
-        </DashboardContext.Provider>
+        </UserDashboardContext.Provider>
     )
 }
 
-const useDashboard = (): DashboardContextType => {
-    const context = useContext(DashboardContext)
+const useUserDashboard = (): UserDashboardContextType => {
+    const context = useContext(UserDashboardContext)
     if (!context) {
-        throw new Error('useDashboard must be used within a DashboardProvider')
+        throw new Error('useUserDashboard must be used within a UserDashboardProvider')
     }
     return context
 }
 
-const sectionTitles: Record<DashboardSection, string> = {
+const sectionTitles: Record<UserDashboardSection, string> = {
     overview: 'Dashboard Overview',
     'parking-lots': 'Parking Lots',
     reservations: 'Reservations',
@@ -108,7 +108,7 @@ const sectionTitles: Record<DashboardSection, string> = {
     'admin-reports': 'Reports & Analytics'
 }
 
-const sectionDescriptions: Record<DashboardSection, string> = {
+const sectionDescriptions: Record<UserDashboardSection, string> = {
     overview: 'View your dashboard overview and quick actions',
     'parking-lots': 'Manage and view parking lot information',
     reservations: 'View and manage your parking reservations',
@@ -119,13 +119,14 @@ const sectionDescriptions: Record<DashboardSection, string> = {
 }
 
 // Helper function to check if a section is admin-only
-export const isAdminSection = (section: DashboardSection): boolean => section.startsWith('admin-')
+export const isAdminSection = (section: UserDashboardSection): boolean =>
+    section.startsWith('admin-')
 
 // Helper function to get section title
-export const getSectionTitle = (section: DashboardSection): string => sectionTitles[section]
+export const getSectionTitle = (section: UserDashboardSection): string => sectionTitles[section]
 
 // Helper function to get section description
-export const getSectionDescription = (section: DashboardSection): string =>
+export const getSectionDescription = (section: UserDashboardSection): string =>
     sectionDescriptions[section]
 
-export { DashboardProvider, useDashboard }
+export { UserDashboardProvider, useUserDashboard }

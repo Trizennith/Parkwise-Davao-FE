@@ -3,9 +3,9 @@
 import * as React from 'react'
 import { Command, Frame, Map, PieChart, Settings2, SquareTerminal } from 'lucide-react'
 
-import { SectionNavigation } from '@/components/main-dashboard/nav-main'
-import { NavProjects } from '@/components/main-dashboard/nav-projects'
-import { NavUser } from '@/components/main-dashboard/nav-user'
+import { SectionNavigation } from '@/components/user-dashboard/nav-main'
+import { NavProjects } from '@/components/user-dashboard/nav-projects'
+import { NavUser } from '@/components/user-dashboard/nav-user'
 import {
     Sidebar,
     SidebarContent,
@@ -13,8 +13,9 @@ import {
     SidebarHeader,
     SidebarRail
 } from '@/components/ui/sidebar'
-import { DashboardSection, useDashboard } from '@/context/main-dashboard'
+import { UserDashboardSection, useUserDashboard } from '@/context/user-dashboard'
 import { useAuth } from '@/context/auth'
+import { ModeToggle } from '../mode-toggle'
 
 // This is sample data.
 const data = {
@@ -32,37 +33,19 @@ const data = {
             items: [
                 {
                     title: 'Overview',
-                    section: 'overview' as DashboardSection
+                    section: 'overview' as UserDashboardSection
                 },
                 {
                     title: 'Parking Lots',
-                    section: 'parking-lots' as DashboardSection
+                    section: 'parking-lots' as UserDashboardSection
                 },
                 {
                     title: 'Reservations',
-                    section: 'reservations' as DashboardSection
-                }
-            ]
-        },
-        {
-            title: 'Administrative Access',
-            icon: Settings2,
-            items: [
-                {
-                    title: 'General',
-                    section: '#' as DashboardSection
+                    section: 'reservations' as UserDashboardSection
                 },
                 {
-                    title: 'Team',
-                    section: '#' as DashboardSection
-                },
-                {
-                    title: 'Billing',
-                    section: '#' as DashboardSection
-                },
-                {
-                    title: 'Limits',
-                    section: '#' as DashboardSection
+                    title: 'Profile',
+                    section: 'profile' as UserDashboardSection
                 }
             ]
         }
@@ -87,18 +70,21 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-    const { headerTitle, updateSection, activeSection } = useDashboard()
+    const { headerTitle, updateSection, activeSection } = useUserDashboard()
     const { user } = useAuth()
     return (
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader>
-                <div className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex flex-row gap-2 mt-2">
-                    <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                <div className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex flex-row items-center gap-2 mt-2">
+                    <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg shrink-0">
                         <Command className="size-4" />
                     </div>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
+                    <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                         <span className="truncate font-medium">{headerTitle.title}</span>
                         <span className="truncate text-xs">{headerTitle.description}</span>
+                    </div>
+                    <div className="shrink-0">  
+                        <ModeToggle />
                     </div>
                 </div>
             </SidebarHeader>
@@ -110,12 +96,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     }}
                     items={data.navMain}
                 />
-                <NavProjects projects={data.projects} />
+                {user?.userType === 'admin' && <NavProjects projects={data.projects} />}
             </SidebarContent>
 
-            <SidebarFooter>
-                <NavUser user={user} />
-            </SidebarFooter>
+            <SidebarFooter>{user && <NavUser user={user} />}</SidebarFooter>
             <SidebarRail />
         </Sidebar>
     )

@@ -4,10 +4,11 @@ import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/context/auth'
 import Layout from '@/layout/layout'
+import UserDashboardLayout from '@/layout/dashboard-layout'
 import PrivateRoute from '@/components/private-route'
 import Login from '@/pages/auth/login'
 import Register from '@/pages/auth/register'
-import Dashboard from '@/pages/dashboard/dashboard_'
+import UserDashboard from '@/pages/user/dashboard'
 
 const queryClient = new QueryClient()
 
@@ -22,10 +23,9 @@ function App() {
                             <Route path="/register" element={<Register />} />
                             <Route element={<Layout />}>
                                 <Route element={<PrivateRoute />}>
-                                    <Route path="/" element={<Dashboard />} />
-                                    {/* <Route path="/parking-lots" element={<ParkingLots />} />
-                                    <Route path="/reservations" element={<Reservations />} />
-                                    <Route path="/profile" element={<Profile />} /> */}
+                                    <Route element={<UserDashboardLayout />}>
+                                        <Route path="/" element={<UserDashboard />} />
+                                    </Route>
                                 </Route>
                             </Route>
                         </Routes>

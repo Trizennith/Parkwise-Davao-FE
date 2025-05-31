@@ -2,12 +2,6 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
-import {
-    NavigationMenu,
-    NavigationMenuList,
-    NavigationMenuItem,
-    NavigationMenuLink
-} from '@/components/ui/navigation-menu'
 
 // Test mode flag - set to true to use mock data
 const TEST_MODE = true
@@ -212,14 +206,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 logout
             }}
         >
-            <NavigationMenu>
-                <NavigationMenuList>
-                    <NavigationMenuItem>
-                        <NavigationMenuLink>...</NavigationMenuLink>
-                    </NavigationMenuItem>
-                    {/* ... other menu items */}
-                </NavigationMenuList>
-            </NavigationMenu>
             {children}
         </AuthContext.Provider>
     )

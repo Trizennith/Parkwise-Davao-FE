@@ -14,6 +14,121 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 
+// Test mode flag
+const TEST_MODE = true
+
+// Mock data for testing
+const MOCK_PARKING_LOTS: ParkingLocation[] = [
+    {
+        id: 1,
+        name: 'Downtown Parking',
+        address: '123 Main St, Davao City',
+        total_slots: 50,
+        available_slots_count: 30,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    },
+    {
+        id: 2,
+        name: 'SM Parking',
+        address: 'SM City Davao, Ecoland',
+        total_slots: 100,
+        available_slots_count: 45,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    },
+    {
+        id: 3,
+        name: 'Abreeza Parking',
+        address: 'Abreeza Mall, Bajada',
+        total_slots: 75,
+        available_slots_count: 20,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    }
+]
+
+const MOCK_SLOTS: Record<number, ParkingSlot[]> = {
+    1: [
+        { 
+            id: 1, 
+            location: 1,
+            slot_number: 'A1', 
+            is_available: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        },
+        { 
+            id: 2, 
+            location: 1,
+            slot_number: 'A2', 
+            is_available: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        },
+        { 
+            id: 3, 
+            location: 1,
+            slot_number: 'A3', 
+            is_available: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        }
+    ],
+    2: [
+        { 
+            id: 4, 
+            location: 2,
+            slot_number: 'B1', 
+            is_available: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        },
+        { 
+            id: 5, 
+            location: 2,
+            slot_number: 'B2', 
+            is_available: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        },
+        { 
+            id: 6, 
+            location: 2,
+            slot_number: 'B3', 
+            is_available: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        }
+    ],
+    3: [
+        { 
+            id: 7, 
+            location: 3,
+            slot_number: 'C1', 
+            is_available: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        },
+        { 
+            id: 8, 
+            location: 3,
+            slot_number: 'C2', 
+            is_available: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        },
+        { 
+            id: 9, 
+            location: 3,
+            slot_number: 'C3', 
+            is_available: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        }
+    ]
+}
+
 export default function ParkingLots() {
     const [selectedLot, setSelectedLot] = useState<ParkingLocation | null>(null)
     const [isReserving, setIsReserving] = useState(false)
@@ -21,6 +136,9 @@ export default function ParkingLots() {
     const { data: parkingLots, isLoading } = useQuery<ParkingLocation[], Error>({
         queryKey: ['parkingLots'],
         queryFn: async (): Promise<ParkingLocation[]> => {
+            if (TEST_MODE) {
+                return MOCK_PARKING_LOTS
+            }
             const response = await api.get('/api/parking/parking-lots/')
             return response.data as ParkingLocation[]
         }
@@ -30,6 +148,9 @@ export default function ParkingLots() {
         queryKey: ['slots', selectedLot?.id],
         queryFn: async (): Promise<ParkingSlot[]> => {
             if (!selectedLot) return []
+            if (TEST_MODE) {
+                return MOCK_SLOTS[selectedLot.id] || []
+            }
             const response = await api.get(`/api/parking/parking-lots/${selectedLot.id}/slots/`)
             return response.data as ParkingSlot[]
         },
@@ -39,6 +160,12 @@ export default function ParkingLots() {
     const handleReserve = async (slotId: number) => {
         setIsReserving(true)
         try {
+            if (TEST_MODE) {
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 1000))
+                toast.success('Slot reserved successfully! (TEST MODE)')
+                return
+            }
             await api.post('/api/reservations/reservations/', {
                 slot: slotId,
                 start_time: new Date().toISOString(),
