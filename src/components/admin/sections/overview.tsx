@@ -63,7 +63,7 @@ export const Overview: FC = () => {
                     </CardContent>
                 </Card>
             </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <div className="flex flex-row gap-4">
                 <Card className="col-span-4">
                     <CardHeader>
                         <CardTitle>Overview</CardTitle>

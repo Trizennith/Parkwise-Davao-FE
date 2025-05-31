@@ -26,7 +26,7 @@ export interface NavUserPropType {
     userType: string
 }
 
-export function NavUser({ user }: { user: NavUserPropType }) {
+export function NavUser({ user, onLogout }: { user: NavUserPropType; onLogout: () => void }) {
     const { isMobile } = useSidebar()
 
     return (
@@ -79,7 +79,7 @@ export function NavUser({ user }: { user: NavUserPropType }) {
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={onLogout}>
                             <LogOut />
                             Log out
                         </DropdownMenuItem>

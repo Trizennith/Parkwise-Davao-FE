@@ -44,7 +44,7 @@ const nav = [
 
 export default function Dashboard() {
     const { activeSection, setActiveSection, headerTitle } = useUserDashboard()
-    const { user } = useUserAuth()
+    const { user, logout } = useUserAuth()
 
     const renderContent = () => {
         switch (activeSection) {
@@ -59,20 +59,15 @@ export default function Dashboard() {
                 return (
                     <div className="space-y-6">
                         <div>
-                            <h1 className="text-3xl font-bold">Dashboard Overview</h1>
                             <p className="text-muted-foreground">
                                 Welcome to your parking dashboard
                             </p>
                         </div>
-                        <div className="grid gap-6 md:grid-cols-2">
+                        <div className="flex flex-col gap-4">
                             <div className="col-span-1">
-                                <h2 className="text-xl font-semibold mb-4">Recent Reservations</h2>
                                 <Reservations />
                             </div>
                             <div className="col-span-1">
-                                <h2 className="text-xl font-semibold mb-4">
-                                    Available Parking Lots
-                                </h2>
                                 <ParkingLots />
                             </div>
                         </div>
@@ -84,12 +79,13 @@ export default function Dashboard() {
     return (
         <SidebarProvider>
             <AppSidebar
+                onLogout={logout}
                 navigation={nav}
                 user={{
                     username: user?.username || 'Admin',
                     email: user?.email || 'admin@example.com',
                     avatarUrl: user?.avatarUrl || '/avatars/default.jpg',
-                    userType: user?.userType || 'Admin'
+                    userType: user?.role || 'Admin'
                 }}
                 header={headerTitle}
                 activeSection={activeSection}
@@ -121,7 +117,7 @@ export default function Dashboard() {
                     </div>
                 </header>
                 <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-                    <div className="grid auto-rows-min gap-4 md:grid-cols-1">
+                    <div className="">
                         <div>{renderContent()}</div>
                     </div>
                     {/* <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" /> */}

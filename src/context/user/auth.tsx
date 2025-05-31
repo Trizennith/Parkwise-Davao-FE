@@ -47,12 +47,16 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
             try {
                 const token = localStorage.getItem('token')
                 if (token) {
+                    // Set the token in the API headers
+                    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+                    
                     const response = await api.get<User>('/api/users/me')
                     setUser(response.data)
                 }
             } catch (error) {
                 console.error('UserAuth initialization error:', error)
                 localStorage.removeItem('token')
+                delete api.defaults.headers.common['Authorization']
             } finally {
                 setIsLoading(false)
             }
@@ -68,8 +72,12 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
                 password
             })
             const { user: userData, token } = response.data
-            setUser(userData)
+            
+            // Set the token in localStorage and API headers
             localStorage.setItem('token', token)
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+            
+            setUser(userData)
             toast.success(`Welcome back, ${userData.firstName}!`)
             navigate('/')
         } catch (error) {
@@ -104,6 +112,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
 
     const logout = () => {
         localStorage.removeItem('token')
+        delete api.defaults.headers.common['Authorization']
         setUser(null)
         toast.success('Logged out successfully')
         navigate('/login')

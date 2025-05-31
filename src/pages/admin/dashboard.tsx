@@ -53,7 +53,7 @@ const nav = [
 ] as AppSidebarNavigationType<AdminDashboardSection>[]
 export default function AdminDashboard() {
     const { activeSection, setActiveSection, headerTitle } = useAdminDashboard()
-    const { admin } = useAdminAuth()
+    const { admin, logout } = useAdminAuth()
 
     const renderContent = () => {
         switch (activeSection) {
@@ -71,21 +71,14 @@ export default function AdminDashboard() {
             default:
                 return (
                     <div className="space-y-6">
-                        <div>
-                            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-                            <p className="text-muted-foreground">Manage your parking system</p>
-                        </div>
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="flex flex-col gap-4">
                             <div className="col-span-1">
-                                <h2 className="text-xl font-semibold mb-4">Recent Reservations</h2>
                                 <Reservations />
                             </div>
                             <div className="col-span-1">
-                                <h2 className="text-xl font-semibold mb-4">Parking Locations</h2>
                                 <ParkingLots />
                             </div>
                             <div className="col-span-1">
-                                <h2 className="text-xl font-semibold mb-4">User Management</h2>
                                 <Users />
                             </div>
                         </div>
@@ -97,6 +90,7 @@ export default function AdminDashboard() {
     return (
         <SidebarProvider>
             <AppSidebar
+                onLogout={logout}
                 navigation={nav}
                 user={{
                     username: admin?.username || 'Admin',
@@ -134,7 +128,7 @@ export default function AdminDashboard() {
                     </div>
                 </header>
                 <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-                    <div className="grid auto-rows-min gap-4 md:grid-cols-1">
+                    <div className="">
                         <div>{renderContent()}</div>
                     </div>
                 </div>

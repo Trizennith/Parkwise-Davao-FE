@@ -1,5 +1,9 @@
 import { FC } from 'react'
-import { useAdminDashboard, getSectionTitle, getSectionDescription } from '@/context/admin/dashboard'
+import {
+    useAdminDashboard,
+    getSectionTitle,
+    getSectionDescription
+} from '@/context/admin/dashboard'
 import { Card } from '@/components/ui/card'
 import { Overview } from './sections/overview'
 import { ParkingLots } from './sections/parking-lots'
@@ -9,7 +13,7 @@ import { Reports } from './sections/reports'
 import { Settings } from './sections/settings'
 
 const AdminDashboard: FC = () => {
-    const { activeSection, headerTitle } = useAdminDashboard()
+    const { activeSection } = useAdminDashboard()
 
     const renderSection = () => {
         switch (activeSection) {
@@ -37,18 +41,14 @@ const AdminDashboard: FC = () => {
                     <h2 className="text-3xl font-bold tracking-tight">
                         {getSectionTitle(activeSection)}
                     </h2>
-                    <p className="text-muted-foreground">
-                        {getSectionDescription(activeSection)}
-                    </p>
+                    <p className="text-muted-foreground">{getSectionDescription(activeSection)}</p>
                 </div>
             </div>
             <div className="grid gap-4">
-                <Card className="p-6">
-                    {renderSection()}
-                </Card>
+                <Card className="p-6">{renderSection()}</Card>
             </div>
         </div>
     )
 }
 
-export default AdminDashboard 
+export default AdminDashboard

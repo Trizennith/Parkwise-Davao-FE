@@ -2,7 +2,7 @@ import { FC } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/ui/data-table'
 import { Button } from '@/components/ui/button'
-import { Plus, Shield, ShieldOff, Trash2, Pencil } from 'lucide-react'
+import { Plus, Trash2, Pencil } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
@@ -18,10 +18,9 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
+    AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 
 interface User {
     id: number
@@ -38,19 +37,19 @@ interface User {
 const columns: ColumnDef<User>[] = [
     {
         accessorKey: 'firstName',
-        header: 'First Name',
+        header: 'First Name'
     },
     {
         accessorKey: 'lastName',
-        header: 'Last Name',
+        header: 'Last Name'
     },
     {
         accessorKey: 'username',
-        header: 'Username',
+        header: 'Username'
     },
     {
         accessorKey: 'email',
-        header: 'Email',
+        header: 'Email'
     },
     {
         accessorKey: 'role',
@@ -59,7 +58,7 @@ const columns: ColumnDef<User>[] = [
             <Badge variant={row.original.role === 'Admin' ? 'default' : 'secondary'}>
                 {row.original.role}
             </Badge>
-        ),
+        )
     },
     {
         accessorKey: 'status',
@@ -68,40 +67,22 @@ const columns: ColumnDef<User>[] = [
             <Badge variant={row.original.status === 'Active' ? 'success' : 'destructive'}>
                 {row.original.status}
             </Badge>
-        ),
+        )
     },
     {
         accessorKey: 'lastLogin',
         header: 'Last Login',
-        cell: ({ row }) => (
-            <span>{new Date(row.original.lastLogin).toLocaleString()}</span>
-        ),
+        cell: ({ row }) => <span>{new Date(row.original.lastLogin).toLocaleString()}</span>
     },
     {
         accessorKey: 'createdAt',
         header: 'Created At',
-        cell: ({ row }) => (
-            <span>{new Date(row.original.createdAt).toLocaleString()}</span>
-        ),
+        cell: ({ row }) => <span>{new Date(row.original.createdAt).toLocaleString()}</span>
     },
     {
         id: 'actions',
         cell: ({ row }) => {
             const queryClient = useQueryClient()
-            
-            const toggleRole = useMutation({
-                mutationFn: async ({ id, role }: { id: number; role: 'User' | 'Admin' }) => {
-                    const response = await api.patch(`/api/users/${id}`, { role })
-                    return response.data
-                },
-                onSuccess: () => {
-                    queryClient.invalidateQueries({ queryKey: ['users'] })
-                    toast.success('User role updated successfully')
-                },
-                onError: () => {
-                    toast.error('Failed to update user role')
-                },
-            })
 
             const deleteUser = useMutation({
                 mutationFn: async (id: number) => {
@@ -114,22 +95,12 @@ const columns: ColumnDef<User>[] = [
                 },
                 onError: () => {
                     toast.error('Failed to delete user')
-                },
+                }
             })
 
             return (
                 <div className="flex items-center gap-2">
                     <EditUserDialog user={row.original} />
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => toggleRole.mutate({
-                            id: row.original.id,
-                            role: row.original.role === 'Admin' ? 'User' : 'Admin'
-                        })}
-                    >
-                        <Shield className="h-4 w-4" />
-                    </Button>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon">
@@ -140,8 +111,8 @@ const columns: ColumnDef<User>[] = [
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the user
-                                    and remove their data from our servers.
+                                    This action cannot be undone. This will permanently delete the
+                                    user and remove their data from our servers.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -156,8 +127,8 @@ const columns: ColumnDef<User>[] = [
                     </AlertDialog>
                 </div>
             )
-        },
-    },
+        }
+    }
 ]
 
 export const Users: FC = () => {
@@ -168,21 +139,7 @@ export const Users: FC = () => {
         queryFn: async (): Promise<User[]> => {
             const response = await api.get<User[]>('/api/users')
             return response.data
-        },
-    })
-
-    const toggleRole = useMutation({
-        mutationFn: async ({ id, role }: { id: number; role: 'User' | 'Admin' }) => {
-            const response = await api.patch<User>(`/api/users/${id}`, { role })
-            return response.data
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['users'] })
-            toast.success('User role updated successfully')
-        },
-        onError: () => {
-            toast.error('Failed to update user role')
-        },
+        }
     })
 
     const deleteUser = useMutation({
@@ -196,7 +153,7 @@ export const Users: FC = () => {
         },
         onError: () => {
             toast.error('Failed to delete user')
-        },
+        }
     })
 
     if (isLoading) {
@@ -210,14 +167,15 @@ export const Users: FC = () => {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">User Management</h2>
+                <div>
+                    <h2 className="text-2xl font-bold">User Management</h2>
+                    <p className="text-muted-foreground">
+                        Manage users and their roles within the system
+                    </p>
+                </div>
                 <AddUserDialog />
             </div>
-            <DataTable
-                columns={columns}
-                data={users ?? []}
-                searchKey="username"
-            />
+            <DataTable columns={columns} data={users ?? []} searchKey="username" />
         </div>
     )
-} 
+}

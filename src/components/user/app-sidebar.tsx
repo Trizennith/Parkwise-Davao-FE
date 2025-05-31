@@ -27,12 +27,14 @@ export function AppSidebar<SEC_TYPE>({
     user,
     header,
     activeSection,
-    updateSection
+    updateSection,
+    onLogout
 }: {
     user: NavUserPropType
     header: { title: string; description: string }
     activeSection: SEC_TYPE
     navigation: AppSidebarNavigationType<SEC_TYPE>[]
+    onLogout: () => void
     updateSection: (section: SEC_TYPE) => void
 }) {
     const { state } = useSidebar()
@@ -67,7 +69,7 @@ export function AppSidebar<SEC_TYPE>({
                 {/* {user?.userType === 'admin' && <NavProjects projects={projects} />} */}
             </SidebarContent>
 
-            <SidebarFooter>{user && <NavUser user={user} />}</SidebarFooter>
+            <SidebarFooter>{user && <NavUser user={user} onLogout={onLogout} />}</SidebarFooter>
             <SidebarRail />
         </Sidebar>
     )

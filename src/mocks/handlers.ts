@@ -491,5 +491,41 @@ export const handlers = [
             token: 'mock-user-token'
         }
         return HttpResponse.json<LoginResponse>(response)
+    }),
+
+    // Get current user
+    http.get('*/api/users/me', ({ request }) => {
+        const token = request.headers.get('Authorization')?.replace('Bearer ', '')
+        if (!token || token !== 'mock-user-token') {
+            return new HttpResponse(null, { status: 401 })
+        }
+
+        // Find the user from our mock data
+        const user = users[0] // For demo, we'll return the first user
+        if (!user) {
+            return new HttpResponse(null, { status: 404 })
+        }
+
+        return HttpResponse.json<User>(user)
+    }),
+
+    // Get current admin
+    http.get('*/api/admin/me', ({ request }) => {
+        const token = request.headers.get('Authorization')?.replace('Bearer ', '')
+        if (!token || token !== 'mock-admin-token') {
+            return new HttpResponse(null, { status: 401 })
+        }
+
+        const response: AdminLoginResponse = {
+            admin: {
+                id: 1,
+                username: 'AdminUser',
+                email: 'admin@example.com',
+                userType: 'super_admin',
+                avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin'
+            },
+            token: 'mock-admin-token'
+        }
+        return HttpResponse.json<AdminLoginResponse>(response)
     })
 ] 

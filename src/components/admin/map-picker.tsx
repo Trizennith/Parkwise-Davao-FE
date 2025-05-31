@@ -211,7 +211,7 @@ export function MapPicker({
     return (
         <div className="relative w-full">
             <div className="flex xl:flex-row  flex-col gap-4 ">
-                <div className="xl:flex-2 relative aspect-[16/9] w-full rounded-md border overflow-hidden">
+                <div className="xl:flex-2  relative aspect-[16/9] w-full rounded-md border overflow-hidden">
                     <MapContainer
                         center={initialPosition || [7.1907, 125.4553]} // Davao City coordinates
                         zoom={13}
@@ -234,7 +234,7 @@ export function MapPicker({
                         <MapControls />
                     </MapContainer>
                 </div>
-                <div className="flex xl:flex-1 xl:flex-col flex-row w-full gap-4">
+                <div className="flex xl:flex-1 flex-col  w-full gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="location-name">Location Name</Label>
                         <Input

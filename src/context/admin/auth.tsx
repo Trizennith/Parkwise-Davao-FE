@@ -62,12 +62,16 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
             try {
                 const token = localStorage.getItem('admin_token')
                 if (token) {
-                    const response = await api.get<AdminUser>('/api/admin/me')
-                    setAdmin(response.data)
+                    // Set the token in the API headers
+                    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+                    
+                    const response = await api.get<AdminAuthResponse>('/api/admin/me')
+                    setAdmin(response.data.admin)
                 }
             } catch (error) {
                 console.error('Auth check failed:', error)
                 localStorage.removeItem('admin_token')
+                delete api.defaults.headers.common['Authorization']
             } finally {
                 setIsLoading(false)
             }
@@ -84,8 +88,12 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
                 password
             })
             const { admin: adminData, token } = response.data
-            setAdmin(adminData)
+            
+            // Set the token in localStorage and API headers
             localStorage.setItem('admin_token', token)
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+            
+            setAdmin(adminData)
             toast.success(`Welcome back, ${adminData.username}!`)
             navigate('/admin')
         } catch (error) {
@@ -100,6 +108,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     const logout = () => {
         setAdmin(null)
         localStorage.removeItem('admin_token')
+        delete api.defaults.headers.common['Authorization']
         toast.success('Logged out successfully')
         navigate('/admin/login')
     }
