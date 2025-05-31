@@ -1,18 +1,9 @@
 'use client'
 
 import * as React from 'react'
-import {
-    AudioWaveform,
-    Command,
-    Frame,
-    GalleryVerticalEnd,
-    Map,
-    PieChart,
-    Settings2,
-    SquareTerminal
-} from 'lucide-react'
+import { Command, Frame, Map, PieChart, Settings2, SquareTerminal } from 'lucide-react'
 
-import { NavMain } from '@/components/main-dashboard/nav-main'
+import { SectionNavigation } from '@/components/main-dashboard/nav-main'
 import { NavProjects } from '@/components/main-dashboard/nav-projects'
 import { NavUser } from '@/components/main-dashboard/nav-user'
 import {
@@ -22,7 +13,8 @@ import {
     SidebarHeader,
     SidebarRail
 } from '@/components/ui/sidebar'
-import { useDashboard } from '@/context/main-dashboard'
+import { DashboardSection, useDashboard } from '@/context/main-dashboard'
+import { useAuth } from '@/context/auth'
 
 // This is sample data.
 const data = {
@@ -31,64 +23,46 @@ const data = {
         email: 'm@example.com',
         avatar: '/avatars/shadcn.jpg'
     },
-    teams: [
-        {
-            name: 'Acme Inc',
-            logo: GalleryVerticalEnd,
-            plan: 'Enterprise'
-        },
-        {
-            name: 'Acme Corp.',
-            logo: AudioWaveform,
-            plan: 'Startup'
-        },
-        {
-            name: 'Evil Corp.',
-            logo: Command,
-            plan: 'Free'
-        }
-    ],
+
     navMain: [
         {
-            title: 'Playground',
-            url: '#',
+            title: 'Access',
             icon: SquareTerminal,
             isActive: true,
             items: [
                 {
-                    title: 'History',
-                    url: '#'
+                    title: 'Overview',
+                    section: 'overview' as DashboardSection
                 },
                 {
-                    title: 'Starred',
-                    url: '#'
+                    title: 'Parking Lots',
+                    section: 'parking-lots' as DashboardSection
                 },
                 {
-                    title: 'Settings',
-                    url: '#'
+                    title: 'Reservations',
+                    section: 'reservations' as DashboardSection
                 }
             ]
         },
         {
-            title: 'Settings',
-            url: '#',
+            title: 'Administrative Access',
             icon: Settings2,
             items: [
                 {
                     title: 'General',
-                    url: '#'
+                    section: '#' as DashboardSection
                 },
                 {
                     title: 'Team',
-                    url: '#'
+                    section: '#' as DashboardSection
                 },
                 {
                     title: 'Billing',
-                    url: '#'
+                    section: '#' as DashboardSection
                 },
                 {
                     title: 'Limits',
-                    url: '#'
+                    section: '#' as DashboardSection
                 }
             ]
         }
@@ -113,7 +87,8 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-    const { headerTitle } = useDashboard()
+    const { headerTitle, updateSection, activeSection } = useDashboard()
+    const { user } = useAuth()
     return (
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader>
@@ -128,11 +103,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </div>
             </SidebarHeader>
             <SidebarContent>
-                <NavMain items={data.navMain} />
+                <SectionNavigation
+                    currentSection={activeSection}
+                    onSectionNavigation={(section) => {
+                        updateSection(section)
+                    }}
+                    items={data.navMain}
+                />
                 <NavProjects projects={data.projects} />
             </SidebarContent>
+
             <SidebarFooter>
-                <NavUser user={data.user} />
+                <NavUser user={user} />
             </SidebarFooter>
             <SidebarRail />
         </Sidebar>

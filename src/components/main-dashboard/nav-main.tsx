@@ -13,18 +13,22 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem
 } from '@/components/ui/sidebar'
+import { DashboardSection } from '@/context/main-dashboard'
 
-export function NavMain({
+export function SectionNavigation({
+    currentSection,
+    onSectionNavigation,
     items
 }: {
+    currentSection?: DashboardSection
+    onSectionNavigation: (section: DashboardSection) => void
     items: {
         title: string
-        url: string
         icon?: LucideIcon
         isActive?: boolean
         items?: {
             title: string
-            url: string
+            section: DashboardSection
         }[]
     }[]
 }) {
@@ -52,9 +56,18 @@ export function NavMain({
                                     {item.items?.map((subItem) => (
                                         <SidebarMenuSubItem key={subItem.title}>
                                             <SidebarMenuSubButton asChild>
-                                                <a href={subItem.url}>
+                                                <p
+                                                    className={`cursor-pointer text-sm px-3 py-2 rounded-md transition-colors ${
+                                                        subItem.section === currentSection
+                                                            ? 'bg-primary/10 text-primary font-medium'
+                                                            : 'text-muted-foreground hover:bg-muted'
+                                                    }`}
+                                                    onClick={() => {
+                                                        onSectionNavigation(subItem.section)
+                                                    }}
+                                                >
                                                     <span>{subItem.title}</span>
-                                                </a>
+                                                </p>
                                             </SidebarMenuSubButton>
                                         </SidebarMenuSubItem>
                                     ))}

@@ -8,9 +8,6 @@ import PrivateRoute from '@/components/private-route'
 import Login from '@/pages/auth/login'
 import Register from '@/pages/auth/register'
 import Dashboard from '@/pages/dashboard/dashboard_'
-import ParkingLots from '@/pages/parking-lots'
-import Reservations from '@/pages/reservations'
-import Profile from '@/pages/profile'
 
 const queryClient = new QueryClient()
 
@@ -26,9 +23,9 @@ function App() {
                             <Route element={<Layout />}>
                                 <Route element={<PrivateRoute />}>
                                     <Route path="/" element={<Dashboard />} />
-                                    <Route path="/parking-lots" element={<ParkingLots />} />
+                                    {/* <Route path="/parking-lots" element={<ParkingLots />} />
                                     <Route path="/reservations" element={<Reservations />} />
-                                    <Route path="/profile" element={<Profile />} />
+                                    <Route path="/profile" element={<Profile />} /> */}
                                 </Route>
                             </Route>
                         </Routes>
