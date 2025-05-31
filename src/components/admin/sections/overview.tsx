@@ -5,7 +5,7 @@ import { Activity, Car, Users, CreditCard } from 'lucide-react'
 export const Overview: FC = () => {
     return (
         <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="flex flex-row gap-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">

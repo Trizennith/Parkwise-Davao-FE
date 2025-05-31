@@ -2,17 +2,10 @@ import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Icon } from 'leaflet'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-    MapPin,
-    Loader2,
-    ZoomIn,
-    ZoomOut,
-    Navigation
-} from 'lucide-react'
+import { Loader2, ZoomIn, ZoomOut, Navigation } from 'lucide-react'
 import { useTheme } from '@/components/theme-provider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -123,26 +116,46 @@ function MapControls() {
     )
 }
 
-interface MapPickerProps {
-    onLocationSelect: (location: {
-        lat: number
-        lng: number
-        name: string
-        address: string
-        totalSpaces: number
-        availableSpaces: number
-    }) => void
-    initialPosition?: [number, number]
+export interface OnLocationClickType {
+    lat: number
+    lng: number
+    name: string
+    address: string
+    totalSpaces: number
+    availableSpaces: number
 }
 
-export function MapPicker({ onLocationSelect, initialPosition }: MapPickerProps) {
+interface MapPickerPropsType {
+    onLocationSelect: (location: OnLocationClickType) => void
+    initialPosition?: [number, number]
+    initialValues?: OnLocationClickType
+}
+
+export function MapPicker({
+    onLocationSelect,
+    initialPosition,
+    initialValues
+}: MapPickerPropsType) {
     const [position, setPosition] = useState<[number, number] | null>(initialPosition || null)
-    const [locationName, setLocationName] = useState('')
-    const [address, setAddress] = useState('')
+    const [locationName, setLocationName] = useState(initialValues?.name || '')
+    const [address, setAddress] = useState(initialValues?.address || '')
     const [isLoadingAddress, setIsLoadingAddress] = useState(false)
-    const [totalSpaces, setTotalSpaces] = useState<number>(0)
-    const [availableSpaces, setAvailableSpaces] = useState<number>(0)
+    const [totalSpaces, setTotalSpaces] = useState<number>(initialValues?.totalSpaces || 0)
+    const [availableSpaces, setAvailableSpaces] = useState<number>(
+        initialValues?.availableSpaces || 0
+    )
     const { theme } = useTheme()
+
+    // Update form when initialValues change
+    useEffect(() => {
+        if (initialValues) {
+            setLocationName(initialValues.name)
+            setAddress(initialValues.address)
+            setTotalSpaces(initialValues.totalSpaces)
+            setAvailableSpaces(initialValues.availableSpaces)
+            setPosition([initialValues.lat, initialValues.lng])
+        }
+    }, [initialValues])
 
     const handleTotalSpacesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseInt(e.target.value) || 0
@@ -197,38 +210,31 @@ export function MapPicker({ onLocationSelect, initialPosition }: MapPickerProps)
 
     return (
         <div className="relative w-full">
-            <Card className="w-full">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="flex items-center gap-2">
-                        <MapPin className="h-5 w-5" />
-                        Select Parking Location
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="relative aspect-[16/9] w-full rounded-md border">
-                        <MapContainer
-                            center={initialPosition || [7.1907, 125.4553]} // Davao City coordinates
-                            zoom={13}
-                            style={{ height: '100%', width: '100%' }}
-                            zoomControl={false}
-                        >
-                            <TileLayer
-                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                url={
-                                    theme === 'dark'
-                                        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                                        : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-                                }
-                            />
-                            <LocationMarker 
-                                position={position} 
-                                setPosition={setPosition} 
-                                onPositionChange={handlePositionChange}
-                            />
-                            <MapControls />
-                        </MapContainer>
-                    </div>
-
+            <div className="flex xl:flex-row  flex-col gap-4 ">
+                <div className="xl:flex-2 relative aspect-[16/9] w-full rounded-md border overflow-hidden">
+                    <MapContainer
+                        center={initialPosition || [7.1907, 125.4553]} // Davao City coordinates
+                        zoom={13}
+                        style={{ height: '100%', width: '100%' }}
+                        zoomControl={false}
+                    >
+                        <TileLayer
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            url={
+                                theme === 'dark'
+                                    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                                    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                            }
+                        />
+                        <LocationMarker
+                            position={position}
+                            setPosition={setPosition}
+                            onPositionChange={handlePositionChange}
+                        />
+                        <MapControls />
+                    </MapContainer>
+                </div>
+                <div className="flex xl:flex-1 xl:flex-col flex-row w-full gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="location-name">Location Name</Label>
                         <Input
@@ -281,13 +287,19 @@ export function MapPicker({ onLocationSelect, initialPosition }: MapPickerProps)
                         </div>
                     )}
 
-                    <div className="flex justify-end">
-                        <Button onClick={handleSubmit} disabled={!position || !locationName}>
-                            Save Location
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+                    {position && (
+                        <div className="space-y-2">
+                            <Label>Coordinates</Label>
+                            <div className="rounded-md border p-2 text-sm font-mono">
+                                {position[0].toFixed(6)}, {position[1].toFixed(6)}
+                            </div>
+                        </div>
+                    )}
+                    <Button onClick={handleSubmit} disabled={!position || !locationName}>
+                        Save Location
+                    </Button>
+                </div>
+            </div>
         </div>
     )
 }

@@ -3,51 +3,35 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 
-// Test mode flag - set to true to use mock data
-const TEST_MODE = true
-
-// Mock users data for testing
-const MOCK_USERS = {
-    admin: {
-        id: 1,
-        username: 'admin',
-        email: 'admin@example.com',
-        userType: 'admin' as const,
-        password: 'admin123',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin'
-    },
-    user: {
-        id: 2,
-        username: 'user',
-        email: 'user@example.com',
-        userType: 'user' as const,
-        password: 'user123',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=user'
-    },
-    staff: {
-        id: 3,
-        username: 'staff',
-        email: 'staff@example.com',
-        userType: 'user' as const,
-        password: 'staff123',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=staff'
-    }
-} as const
-
 export interface User {
     id: number
+    firstName: string
+    lastName: string
     username: string
     email: string
-    userType: 'user' | 'admin'
+    role: 'User' | 'Admin'
+    status: 'Active' | 'Inactive'
+    lastLogin: string
+    createdAt: string
     avatarUrl?: string
+}
+
+interface LoginRequest {
+    email: string
+    password: string
+}
+
+interface LoginResponse {
+    user: User
+    token: string
 }
 
 interface UserAuthContextType {
     user: User | null
     isAuthenticated: boolean
     isLoading: boolean
-    login: (username: string, password: string) => Promise<void>
-    register: (username: string, email: string, password: string) => Promise<void>
+    login: (email: string, password: string) => Promise<void>
+    register: (firstName: string, lastName: string, username: string, email: string, password: string) => Promise<void>
     logout: () => void
 }
 
@@ -61,32 +45,14 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const initializeUserAuth = async () => {
             try {
-                if (TEST_MODE) {
-                    // In test mode, check if there's a stored test user
-                    const storedTestUser = localStorage.getItem('test_user')
-                    if (storedTestUser) {
-                        const { username, password } = JSON.parse(storedTestUser)
-                        const mockUser = Object.values(MOCK_USERS).find(
-                            (u) => u.username === username && u.password === password
-                        )
-                        if (mockUser) {
-                            const { password: _, ...userWithoutPassword } = mockUser
-                            setUser(userWithoutPassword)
-                        }
-                    }
-                } else {
-                    const token = localStorage.getItem('token')
-                    if (token) {
-                        const response = await api.get('/api/accounts/users/me/')
-                        setUser(response.data as User)
-                    }
+                const token = localStorage.getItem('token')
+                if (token) {
+                    const response = await api.get<User>('/api/users/me')
+                    setUser(response.data)
                 }
             } catch (error) {
                 console.error('UserAuth initialization error:', error)
-                if (!TEST_MODE) {
-                    localStorage.removeItem('token')
-                    localStorage.removeItem('refresh_token')
-                }
+                localStorage.removeItem('token')
             } finally {
                 setIsLoading(false)
             }
@@ -95,42 +61,16 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         initializeUserAuth()
     }, [])
 
-    const login = async (username: string, password: string) => {
+    const login = async (email: string, password: string) => {
         try {
-            if (TEST_MODE) {
-                const mockUser = Object.values(MOCK_USERS).find(
-                    (u) => u.username === username && u.password === password
-                )
-
-                if (!mockUser) {
-                    toast.error(
-                        'Invalid test credentials. Try admin/admin123, user/user123, or staff/staff123'
-                    )
-                    throw new Error('Invalid test credentials')
-                }
-
-                // Store test user credentials
-                localStorage.setItem('test_user', JSON.stringify({ username, password }))
-
-                // Remove password from user object before setting state
-                const { password: _, ...userWithoutPassword } = mockUser
-                setUser(userWithoutPassword)
-
-                toast.success(`Welcome back, ${mockUser.username}! (TEST MODE)`)
-                navigate('/')
-                return
-            }
-
-            const response = await api.post('/api/token/', { username, password })
-            const { access, refresh } = response.data as { access: string; refresh: string }
-            localStorage.setItem('token', access)
-            localStorage.setItem('refresh_token', refresh)
-
-            const userResponse = await api.get('/api/accounts/users/me/')
-            setUser(userResponse.data as User)
-
-            toast.success('You have been logged in successfully.')
-
+            const response = await api.post<LoginResponse>('/api/auth/login', {
+                email,
+                password
+            })
+            const { user: userData, token } = response.data
+            setUser(userData)
+            localStorage.setItem('token', token)
+            toast.success(`Welcome back, ${userData.firstName}!`)
             navigate('/')
         } catch (error) {
             toast.error('Invalid credentials. Please try again.')
@@ -138,39 +78,24 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    const register = async (username: string, email: string, password: string) => {
+    const register = async (
+        firstName: string,
+        lastName: string,
+        username: string,
+        email: string,
+        password: string
+    ) => {
         try {
-            if (TEST_MODE) {
-                // In test mode, check if username already exists
-                if (Object.values(MOCK_USERS).some((u) => u.username === username)) {
-                    toast.error('Username already exists in test mode')
-                    throw new Error('Username already exists')
-                }
-
-                // Create new mock user
-                const newUser = {
-                    id: Object.keys(MOCK_USERS).length + 1,
-                    username,
-                    email,
-                    userType: 'user' as const,
-                    password,
-                    avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`
-                }
-
-                // Store test user credentials
-                localStorage.setItem('test_user', JSON.stringify({ username, password }))
-
-                // Remove password from user object before setting state
-                const { password: _, ...userWithoutPassword } = newUser
-                setUser(userWithoutPassword)
-
-                toast.success('Registration successful (TEST MODE)')
-                navigate('/')
-                return
-            }
-
-            await api.post('/api/accounts/users/', { username, email, password })
-            await login(username, password)
+            const response = await api.post<User>('/api/users', {
+                firstName,
+                lastName,
+                username,
+                email,
+                password,
+                role: 'User',
+                status: 'Active'
+            })
+            await login(email, password)
         } catch (error) {
             toast.error('Registration failed. Please try again.')
             throw error
@@ -178,16 +103,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const logout = () => {
-        if (TEST_MODE) {
-            localStorage.removeItem('test_user')
-            setUser(null)
-            navigate('/login')
-            return
-        }
-
         localStorage.removeItem('token')
-        localStorage.removeItem('refresh_token')
         setUser(null)
+        toast.success('Logged out successfully')
         navigate('/login')
     }
 

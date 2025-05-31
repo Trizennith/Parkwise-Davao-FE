@@ -1,124 +1,323 @@
-import { FC } from 'react'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
+} from '@/components/ui/dialog'
+import { CardTitle } from '@/components/ui/card'
+import { Plus, Pencil, Trash2, MoreHorizontal } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { reservationsService, Reservation } from '@/services/reservations'
+import { toast } from 'sonner'
 import {
     Table,
     TableBody,
     TableCell,
     TableHead,
     TableHeader,
-    TableRow,
+    TableRow
 } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Eye, Check, X } from 'lucide-react'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import {
+    ColumnDef,
+    flexRender,
+    getCoreRowModel,
+    useReactTable,
+    getPaginationRowModel,
+    SortingState,
+    getSortedRowModel
+} from '@tanstack/react-table'
+import { Badge } from '@/components/ui/badge'
+import { format } from 'date-fns'
+import { ReservationForm } from './reservation-form'
 
-export const Reservations: FC = () => {
-    // Mock data - replace with actual data from API
-    const reservations = [
-        {
-            id: 1,
-            user: 'John Doe',
-            parkingLot: 'SM City Davao Parking',
-            slotNumber: 'A-123',
-            startTime: '2024-03-20 10:00 AM',
-            endTime: '2024-03-20 12:00 PM',
-            status: 'Pending',
-            amount: '₱50.00'
+const TEST_MODE = import.meta.env.VITE_TEST_MODE === 'true'
+
+export function Reservations() {
+    const [isOpen, setIsOpen] = useState(false)
+    const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
+    const [sorting, setSorting] = useState<SortingState>([])
+    const queryClient = useQueryClient()
+
+    // Fetch reservations
+    const { data: reservations = [], isLoading } = useQuery({
+        queryKey: ['reservations'],
+        queryFn: reservationsService.getAll
+    })
+
+    // Create mutation
+    const createMutation = useMutation({
+        mutationFn: reservationsService.create,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['reservations'] })
+            setIsOpen(false)
+            toast.success('Reservation created successfully')
         },
-        {
-            id: 2,
-            user: 'Jane Smith',
-            parkingLot: 'Abreeza Mall Parking',
-            slotNumber: 'B-456',
-            startTime: '2024-03-20 11:30 AM',
-            endTime: '2024-03-20 02:30 PM',
-            status: 'Confirmed',
-            amount: '₱75.00'
-        },
-        {
-            id: 3,
-            user: 'Mike Johnson',
-            parkingLot: 'Gaisano Mall Parking',
-            slotNumber: 'C-789',
-            startTime: '2024-03-20 09:00 AM',
-            endTime: '2024-03-20 01:00 PM',
-            status: 'Cancelled',
-            amount: '₱100.00'
+        onError: (error) => {
+            toast.error('Failed to create reservation')
+            console.error('Create error:', error)
         }
-    ]
+    })
 
-    const getStatusColor = (status: string) => {
-        switch (status.toLowerCase()) {
-            case 'confirmed':
-                return 'bg-green-100 text-green-800'
-            case 'pending':
-                return 'bg-yellow-100 text-yellow-800'
-            case 'cancelled':
-                return 'bg-red-100 text-red-800'
-            default:
-                return 'bg-gray-100 text-gray-800'
+    // Update mutation
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string; data: Partial<Reservation> }) =>
+            reservationsService.update(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['reservations'] })
+            setIsOpen(false)
+            setSelectedReservation(null)
+            toast.success('Reservation updated successfully')
+        },
+        onError: (error) => {
+            toast.error('Failed to update reservation')
+            console.error('Update error:', error)
+        }
+    })
+
+    // Delete mutation
+    const deleteMutation = useMutation({
+        mutationFn: reservationsService.delete,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['reservations'] })
+            toast.success('Reservation deleted successfully')
+        },
+        onError: (error) => {
+            toast.error('Failed to delete reservation')
+            console.error('Delete error:', error)
+        }
+    })
+
+    const handleEdit = (reservation: Reservation) => {
+        setSelectedReservation(reservation)
+        setIsOpen(true)
+    }
+
+    const handleDelete = (id: string) => {
+        if (window.confirm('Are you sure you want to delete this reservation?')) {
+            deleteMutation.mutate(id)
         }
     }
 
+    const handleSubmit = (data: Omit<Reservation, 'id' | 'createdAt'>) => {
+        if (selectedReservation) {
+            updateMutation.mutate({ id: selectedReservation.id, data })
+        } else {
+            createMutation.mutate(data)
+        }
+    }
+
+    const columns: ColumnDef<Reservation>[] = [
+        {
+            accessorKey: 'parkingLotName',
+            header: 'Parking Lot',
+            cell: ({ row }) => <div className="font-medium">{row.getValue('parkingLotName')}</div>
+        },
+        {
+            accessorKey: 'userName',
+            header: 'User',
+            cell: ({ row }) => <div>{row.getValue('userName')}</div>
+        },
+        {
+            accessorKey: 'vehiclePlate',
+            header: 'Vehicle Plate',
+            cell: ({ row }) => <div>{row.getValue('vehiclePlate')}</div>
+        },
+        {
+            accessorKey: 'startTime',
+            header: 'Start Time',
+            cell: ({ row }) => (
+                <div>{format(new Date(row.getValue('startTime')), 'MMM d, yyyy h:mm a')}</div>
+            )
+        },
+        {
+            accessorKey: 'endTime',
+            header: 'End Time',
+            cell: ({ row }) => (
+                <div>{format(new Date(row.getValue('endTime')), 'MMM d, yyyy h:mm a')}</div>
+            )
+        },
+        {
+            accessorKey: 'status',
+            header: 'Status',
+            cell: ({ row }) => {
+                const status = row.getValue('status') as string
+                return (
+                    <Badge
+                        variant={
+                            status === 'active'
+                                ? 'success'
+                                : status === 'completed'
+                                ? 'secondary'
+                                : 'destructive'
+                        }
+                    >
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </Badge>
+                )
+            }
+        },
+        {
+            id: 'actions',
+            cell: ({ row }) => {
+                const reservation = row.original
+
+                return (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleEdit(reservation)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => handleDelete(reservation.id)}
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )
+            }
+        }
+    ]
+
+    const table = useReactTable({
+        data: reservations,
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        onSortingChange: setSorting,
+        getSortedRowModel: getSortedRowModel(),
+        state: {
+            sorting
+        }
+    })
+
     return (
-        <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Parking Reservations</h3>
-                <div className="flex gap-2">
-                    <Button variant="outline">
-                        Export
-                    </Button>
-                    <Button>
-                        New Reservation
-                    </Button>
+        <div className="space-y-6">
+            <div className="flex items-start justify-between">
+                <div>
+                    <div className="flex items-center gap-2">
+                        <h2 className="text-2xl font-bold tracking-tight">Reservations</h2>
+                        {TEST_MODE && (
+                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                                TEST MODE
+                            </Badge>
+                        )}
+                    </div>
+                    <p className="text-muted-foreground">
+                        Manage parking reservations and their status
+                    </p>
                 </div>
+                <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 p-0"
+                    onClick={() => {
+                        setSelectedReservation(null)
+                        setIsOpen(true)
+                    }}
+                    aria-label="Add Reservation"
+                >
+                    <Plus className="h-4 w-4" />
+                </Button>
             </div>
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>User</TableHead>
-                            <TableHead>Parking Lot</TableHead>
-                            <TableHead>Slot</TableHead>
-                            <TableHead>Start Time</TableHead>
-                            <TableHead>End Time</TableHead>
-                            <TableHead>Amount</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {reservations.map((reservation) => (
-                            <TableRow key={reservation.id}>
-                                <TableCell className="font-medium">{reservation.user}</TableCell>
-                                <TableCell>{reservation.parkingLot}</TableCell>
-                                <TableCell>{reservation.slotNumber}</TableCell>
-                                <TableCell>{reservation.startTime}</TableCell>
-                                <TableCell>{reservation.endTime}</TableCell>
-                                <TableCell>{reservation.amount}</TableCell>
-                                <TableCell>
-                                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(reservation.status)}`}>
-                                        {reservation.status}
-                                    </span>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon">
-                                        <Eye className="h-4 w-4" />
-                                    </Button>
-                                    {reservation.status === 'Pending' && (
-                                        <>
-                                            <Button variant="ghost" size="icon">
-                                                <Check className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon">
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        </>
-                                    )}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
+
+            {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+            ) : (
+                <div className="rounded-md border">
+                    <Table>
+                        <TableHeader>
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <TableRow key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => (
+                                        <TableHead key={header.id}>
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                      header.column.columnDef.header,
+                                                      header.getContext()
+                                                  )}
+                                        </TableHead>
+                                    ))}
+                                </TableRow>
+                            ))}
+                        </TableHeader>
+                        <TableBody>
+                            {table.getRowModel().rows?.length ? (
+                                table.getRowModel().rows.map((row) => (
+                                    <TableRow
+                                        key={row.id}
+                                        data-state={row.getIsSelected() && 'selected'}
+                                    >
+                                        {row.getVisibleCells().map((cell) => (
+                                            <TableCell key={cell.id}>
+                                                {flexRender(
+                                                    cell.column.columnDef.cell,
+                                                    cell.getContext()
+                                                )}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={columns.length}
+                                        className="h-24 text-center"
+                                    >
+                                        No results.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
+
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {selectedReservation ? 'Edit Reservation' : 'Add New Reservation'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {selectedReservation
+                                ? 'Update the reservation details below.'
+                                : 'Fill in the details to create a new reservation.'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ReservationForm
+                        onSubmit={handleSubmit}
+                        initialValues={selectedReservation || undefined}
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     )
 } 

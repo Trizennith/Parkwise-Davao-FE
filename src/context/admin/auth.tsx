@@ -26,10 +26,15 @@ const MOCK_ADMINS = {
 
 export interface AdminUser {
     id: number
-    username:string,
+    username: string
     email: string
     userType: 'super_admin' | 'moderator'
     avatarUrl?: string
+}
+
+interface LoginRequest {
+    email: string
+    password: string
 }
 
 interface AdminAuthResponse {
@@ -53,24 +58,15 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     const navigate = useNavigate()
 
     useEffect(() => {
-        // Check for existing session
         const checkAuth = async () => {
             try {
-                if (TEST_MODE) {
-                    // Simulate API delay
-                    await new Promise(resolve => setTimeout(resolve, 1000))
-                    const storedAdmin = localStorage.getItem('admin')
-                    if (storedAdmin) {
-                        setAdmin(JSON.parse(storedAdmin))
-                    }
-                } else {
+                const token = localStorage.getItem('admin_token')
+                if (token) {
                     const response = await api.get<AdminUser>('/api/admin/me')
                     setAdmin(response.data)
                 }
             } catch (error) {
                 console.error('Auth check failed:', error)
-                // Clear any invalid session data
-                localStorage.removeItem('admin')
                 localStorage.removeItem('admin_token')
             } finally {
                 setIsLoading(false)
@@ -83,37 +79,15 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     const login = async (email: string, password: string) => {
         try {
             setIsLoading(true)
-            if (TEST_MODE) {
-                // Simulate API delay
-                await new Promise(resolve => setTimeout(resolve, 1000))
-                
-                // Mock login logic
-                if (email === 'admin@example.com' && password === 'admin123') {
-                    const adminData = MOCK_ADMINS.admin
-                    setAdmin(adminData)
-                    localStorage.setItem('admin', JSON.stringify(adminData))
-                    toast.success('Welcome back, Admin!')
-                    navigate('/admin')
-                } else if (email === 'moderator@example.com' && password === 'mod123') {
-                    const adminData = MOCK_ADMINS.moderator
-                    setAdmin(adminData)
-                    localStorage.setItem('admin', JSON.stringify(adminData))
-                    toast.success('Welcome back, Moderator!')
-                    navigate('/admin')
-                } else {
-                    throw new Error('Invalid credentials')
-                }
-            } else {
-                const response = await api.post<AdminAuthResponse>('/api/admin/login', {
-                    email,
-                    password
-                })
-                const { admin: adminData, token } = response.data
-                setAdmin(adminData)
-                localStorage.setItem('admin_token', token)
-                toast.success('Welcome back!')
-                navigate('/admin')
-            }
+            const response = await api.post<AdminAuthResponse>('/api/admin/login', {
+                email,
+                password
+            })
+            const { admin: adminData, token } = response.data
+            setAdmin(adminData)
+            localStorage.setItem('admin_token', token)
+            toast.success(`Welcome back, ${adminData.username}!`)
+            navigate('/admin')
         } catch (error) {
             console.error('Login failed:', error)
             toast.error('Invalid credentials')
@@ -125,7 +99,6 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
     const logout = () => {
         setAdmin(null)
-        localStorage.removeItem('admin')
         localStorage.removeItem('admin_token')
         toast.success('Logged out successfully')
         navigate('/admin/login')
