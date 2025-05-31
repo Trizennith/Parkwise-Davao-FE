@@ -13,7 +13,7 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem
 } from '@/components/ui/sidebar'
-import { UserDashboardSection } from '@/context/user-dashboard'
+import { UserDashboardSection } from '@/context/user/dashboard'
 
 export function SectionNavigation({
     currentSection,

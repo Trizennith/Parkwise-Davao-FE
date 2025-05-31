@@ -1,4 +1,12 @@
+import { useAdminDashboard } from '@/context/admin/dashboard'
+import { ParkingLots } from '@/components/admin/sections/parking-lots'
+import { Reservations } from '@/components/admin/sections/reservations'
+import { Users } from '@/components/admin/sections/users'
+import { Reports } from '@/components/admin/sections/reports'
+import { Settings } from '@/components/admin/sections/settings'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/user/app-sidebar'
+import { Separator } from '@radix-ui/react-separator'
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -7,15 +15,9 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator
 } from '@/components/ui/breadcrumb'
-import { Separator } from '@/components/ui/separator'
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
-import { useUserDashboard } from '@/context/user/dashboard'
-import ParkingLots from '@/components/user/sections/parking-lots'
-import Reservations from '@/components/user/sections/reservations'
-import Profile from '@/components/user/sections/profile'
 
-export default function Dashboard() {
-    const { activeSection } = useUserDashboard()
+export default function AdminDashboard() {
+    const { activeSection } = useAdminDashboard()
 
     const renderContent = () => {
         switch (activeSection) {
@@ -23,28 +25,32 @@ export default function Dashboard() {
                 return <ParkingLots />
             case 'reservations':
                 return <Reservations />
-            case 'profile':
-                return <Profile />
+            case 'users':
+                return <Users />
+            case 'reports':
+                return <Reports />
+            case 'settings':
+                return <Settings />
             case 'overview':
             default:
                 return (
                     <div className="space-y-6">
                         <div>
-                            <h1 className="text-3xl font-bold">Dashboard Overview</h1>
-                            <p className="text-muted-foreground">
-                                Welcome to your parking dashboard
-                            </p>
+                            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+                            <p className="text-muted-foreground">Manage your parking system</p>
                         </div>
-                        <div className="grid gap-6 md:grid-cols-2">
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                             <div className="col-span-1">
                                 <h2 className="text-xl font-semibold mb-4">Recent Reservations</h2>
                                 <Reservations />
                             </div>
                             <div className="col-span-1">
-                                <h2 className="text-xl font-semibold mb-4">
-                                    Available Parking Lots
-                                </h2>
+                                <h2 className="text-xl font-semibold mb-4">Parking Locations</h2>
                                 <ParkingLots />
+                            </div>
+                            <div className="col-span-1">
+                                <h2 className="text-xl font-semibold mb-4">User Management</h2>
+                                <Users />
                             </div>
                         </div>
                     </div>
@@ -82,7 +88,6 @@ export default function Dashboard() {
                     <div className="grid auto-rows-min gap-4 md:grid-cols-1">
                         <div>{renderContent()}</div>
                     </div>
-                    {/* <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" /> */}
                 </div>
             </SidebarInset>
         </SidebarProvider>

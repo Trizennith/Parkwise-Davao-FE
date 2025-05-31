@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom'
-import { UserDashboardProvider } from '@/context/user-dashboard'
+import { UserDashboardProvider } from '@/context/user/dashboard'
 
 export default function UserDashboardLayout() {
     return (

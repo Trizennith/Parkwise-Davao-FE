@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useAuth } from '@/context/auth'
+import { useUserAuth } from '@/context/user/auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 import { api } from '@/lib/api'
 
 export default function Profile() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useUserAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
     username: user?.username || '',

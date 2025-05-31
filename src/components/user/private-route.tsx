@@ -1,8 +1,8 @@
 import { Navigate, Outlet } from 'react-router-dom'
-import { useAuth } from '@/context/auth'
+import { useUserAuth } from '@/context/user/auth'
 
 export default function PrivateRoute() {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading } = useUserAuth()
 
   if (isLoading) {
     return <div>Loading...</div> // You can replace this with a proper loading component

@@ -42,7 +42,7 @@ export interface User {
     avatarUrl?: string
 }
 
-interface AuthContextType {
+interface UserAuthContextType {
     user: User | null
     isAuthenticated: boolean
     isLoading: boolean
@@ -51,15 +51,15 @@ interface AuthContextType {
     logout: () => void
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const UserAuthContext = createContext<UserAuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const navigate = useNavigate()
 
     useEffect(() => {
-        const initializeAuth = async () => {
+        const initializeUserAuth = async () => {
             try {
                 if (TEST_MODE) {
                     // In test mode, check if there's a stored test user
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     }
                 }
             } catch (error) {
-                console.error('Auth initialization error:', error)
+                console.error('UserAuth initialization error:', error)
                 if (!TEST_MODE) {
                     localStorage.removeItem('token')
                     localStorage.removeItem('refresh_token')
@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         }
 
-        initializeAuth()
+        initializeUserAuth()
     }, [])
 
     const login = async (username: string, password: string) => {
@@ -196,7 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider
+        <UserAuthContext.Provider
             value={{
                 user,
                 isAuthenticated: !!user,
@@ -207,14 +207,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }}
         >
             {children}
-        </AuthContext.Provider>
+        </UserAuthContext.Provider>
     )
 }
 
-export function useAuth() {
-    const context = useContext(AuthContext)
+export function useUserAuth() {
+    const context = useContext(UserAuthContext)
     if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider')
+        throw new Error('useUserAuth must be used within a UserAuthProvider')
     }
     return context
 }

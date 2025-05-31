@@ -1,11 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { Command, Frame, Map, PieChart, Settings2, SquareTerminal } from 'lucide-react'
+import { Command, Frame, Map, PieChart, SquareTerminal } from 'lucide-react'
 
-import { SectionNavigation } from '@/components/user-dashboard/nav-main'
-import { NavProjects } from '@/components/user-dashboard/nav-projects'
-import { NavUser } from '@/components/user-dashboard/nav-user'
+import { SectionNavigation } from '@/components/user/nav-main'
+import { NavProjects } from '@/components/user/nav-projects'
+import { NavUser } from '@/components/user/nav-user'
 import {
     Sidebar,
     SidebarContent,
@@ -13,8 +13,8 @@ import {
     SidebarHeader,
     SidebarRail
 } from '@/components/ui/sidebar'
-import { UserDashboardSection, useUserDashboard } from '@/context/user-dashboard'
-import { useAuth } from '@/context/auth'
+import { UserDashboardSection, useUserDashboard } from '@/context/user/dashboard'
+import { useUserAuth } from '@/context/user/auth'
 import { ModeToggle } from '../mode-toggle'
 
 // This is sample data.
@@ -71,7 +71,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { headerTitle, updateSection, activeSection } = useUserDashboard()
-    const { user } = useAuth()
+    const { user } = useUserAuth()
     return (
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader>
@@ -83,7 +83,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         <span className="truncate font-medium">{headerTitle.title}</span>
                         <span className="truncate text-xs">{headerTitle.description}</span>
                     </div>
-                    <div className="shrink-0">  
+                    <div className="shrink-0">
                         <ModeToggle />
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '@/context/auth'
+import { useUserAuth } from '@/context/user/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,7 +11,7 @@ export default function Register() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const { register } = useAuth()
+  const { register } = useUserAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
