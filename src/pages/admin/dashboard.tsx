@@ -1,11 +1,11 @@
-import { useAdminDashboard } from '@/context/admin/dashboard'
+import { AdminDashboardSection, useAdminDashboard } from '@/context/admin/dashboard'
 import { ParkingLots } from '@/components/admin/sections/parking-lots'
 import { Reservations } from '@/components/admin/sections/reservations'
 import { Users } from '@/components/admin/sections/users'
 import { Reports } from '@/components/admin/sections/reports'
 import { Settings } from '@/components/admin/sections/settings'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
-import { AppSidebar } from '@/components/user/app-sidebar'
+import { AppSidebar, AppSidebarNavigationType } from '@/components/user/app-sidebar'
 import { Separator } from '@radix-ui/react-separator'
 import {
     Breadcrumb,
@@ -15,9 +15,45 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator
 } from '@/components/ui/breadcrumb'
+import { useAdminAuth } from '@/context/admin/auth'
+import { SquareTerminal } from 'lucide-react'
 
+const nav = [
+    {
+        title: 'Access',
+        icon: SquareTerminal,
+        isActive: true,
+        items: [
+            {
+                title: 'Overview',
+                section: 'overview'
+            },
+            {
+                title: 'Parking Lots',
+                section: 'parking-lots'
+            },
+            {
+                title: 'Reservations',
+                section: 'reservations'
+            },
+            {
+                title: 'Users',
+                section: 'users'
+            },
+            {
+                title: 'Reports',
+                section: 'reports'
+            },
+            {
+                title: 'Settings',
+                section: 'settings'
+            }
+        ]
+    }
+] as AppSidebarNavigationType<AdminDashboardSection>[]
 export default function AdminDashboard() {
-    const { activeSection } = useAdminDashboard()
+    const { activeSection, setActiveSection, headerTitle } = useAdminDashboard()
+    const { admin } = useAdminAuth()
 
     const renderContent = () => {
         switch (activeSection) {
@@ -60,7 +96,20 @@ export default function AdminDashboard() {
 
     return (
         <SidebarProvider>
-            <AppSidebar />
+            <AppSidebar
+                navigation={nav}
+                user={{
+                    username: admin?.username || 'Admin',
+                    email: admin?.email || 'admin@example.com',
+                    avatarUrl: admin?.avatarUrl || '/avatars/default.jpg',
+                    userType: admin?.userType || 'Admin'
+                }}
+                header={headerTitle}
+                activeSection={activeSection}
+                updateSection={(section: AdminDashboardSection) => {
+                    setActiveSection(section)
+                }}
+            />
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
                     <div className="flex items-center gap-2 px-4">

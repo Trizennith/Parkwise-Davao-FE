@@ -10,25 +10,25 @@ const TEST_MODE = true
 const MOCK_ADMINS = {
     admin: {
         id: 1,
-        username: 'admin',
+        username:'AdminUser',
         email: 'admin@example.com',
-        role: 'super_admin',
+        userType: 'super_admin',
         avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin'
     },
     moderator: {
         id: 2,
-        username: 'moderator',
+        username: 'ModeratorUser',
         email: 'moderator@example.com',
-        role: 'moderator',
+        userType: 'moderator',
         avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=moderator'
     }
 } as const
 
 export interface AdminUser {
     id: number
-    username: string
+    username:string,
     email: string
-    role: 'super_admin' | 'moderator'
+    userType: 'super_admin' | 'moderator'
     avatarUrl?: string
 }
 
@@ -41,7 +41,7 @@ interface AdminAuthContextType {
     admin: AdminUser | null
     isAuthenticated: boolean
     isLoading: boolean
-    login: (username: string, password: string) => Promise<void>
+    login: (email: string, password: string) => Promise<void>
     logout: () => void
 }
 
@@ -80,7 +80,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         checkAuth()
     }, [])
 
-    const login = async (username: string, password: string) => {
+    const login = async (email: string, password: string) => {
         try {
             setIsLoading(true)
             if (TEST_MODE) {
@@ -88,13 +88,13 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
                 await new Promise(resolve => setTimeout(resolve, 1000))
                 
                 // Mock login logic
-                if (username === 'admin' && password === 'admin123') {
+                if (email === 'admin@example.com' && password === 'admin123') {
                     const adminData = MOCK_ADMINS.admin
                     setAdmin(adminData)
                     localStorage.setItem('admin', JSON.stringify(adminData))
                     toast.success('Welcome back, Admin!')
                     navigate('/admin')
-                } else if (username === 'moderator' && password === 'mod123') {
+                } else if (email === 'moderator@example.com' && password === 'mod123') {
                     const adminData = MOCK_ADMINS.moderator
                     setAdmin(adminData)
                     localStorage.setItem('admin', JSON.stringify(adminData))
@@ -105,7 +105,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
                 }
             } else {
                 const response = await api.post<AdminAuthResponse>('/api/admin/login', {
-                    username,
+                    email,
                     password
                 })
                 const { admin: adminData, token } = response.data

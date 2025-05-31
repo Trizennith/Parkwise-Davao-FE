@@ -2,17 +2,17 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/theme-provider'
-import { UserAuthProvider } from '@/context/user/auth'
+import AuthProvider from '@/components/auth-provider'
 import Layout from '@/layout/layout'
 import UserDashboardLayout from '@/layout/dashboard-layout'
 import AdminLayout from '@/layout/admin-layout'
 import UserPrivateRoute from '@/components/user/private-route'
+import AdminPrivateRoute from '@/components/admin/private-route'
 import Login from '@/pages/user/auth/login'
 import Register from '@/pages/user/auth/register'
+import AdminLogin from '@/pages/admin/auth/login'
 import UserDashboard from '@/pages/user/dashboard'
 import AdminDashboard from '@/pages/admin/dashboard'
-import AdminPrivateRoute from '@/components/admin/private-route'
-import { AdminAuthProvider } from './context/admin/auth'
 
 const queryClient = new QueryClient()
 
@@ -21,37 +21,31 @@ function App() {
         <QueryClientProvider client={queryClient}>
             <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
                 <Router>
-                    <Routes>
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/register" element={<Register />} />
-                        <Route element={<Layout />}>
-                            <Route
-                                element={
-                                    <UserAuthProvider>
-                                        <UserPrivateRoute />
-                                    </UserAuthProvider>
-                                }
-                            >
-                                {/* User Routes */}
-                                <Route path="/user" element={<UserDashboardLayout />}>
-                                    <Route index element={<UserDashboard />} />
-                                </Route>
-                            </Route>
+                    <AuthProvider>
+                        <Routes>
+                            <Route path="/login" element={<Login />} />
+                            <Route path="/register" element={<Register />} />
 
-                            <Route
-                                element={
-                                    <AdminAuthProvider>
-                                        <AdminPrivateRoute />
-                                    </AdminAuthProvider>
-                                }
-                            >
-                                {/* Admin Routes */}
-                                <Route path="/admin" element={<AdminLayout />}>
-                                    <Route index element={<AdminDashboard />} />
+                            <Route path="/admin/login" element={<AdminLogin />} />
+
+                            {/* Main Layout */}
+                            <Route element={<Layout />}>
+                                {/* Protected User Routes */}
+                                <Route element={<UserPrivateRoute />}>
+                                    <Route path="/user" element={<UserDashboardLayout />}>
+                                        <Route index element={<UserDashboard />} />
+                                    </Route>
+                                </Route>
+
+                                {/* Protected Admin Routes */}
+                                <Route element={<AdminPrivateRoute />}>
+                                    <Route path="/admin" element={<AdminLayout />}>
+                                        <Route index element={<AdminDashboard />} />
+                                    </Route>
                                 </Route>
                             </Route>
-                        </Route>
-                    </Routes>
+                        </Routes>
+                    </AuthProvider>
                     <Toaster />
                 </Router>
             </ThemeProvider>

@@ -13,22 +13,21 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem
 } from '@/components/ui/sidebar'
-import { UserDashboardSection } from '@/context/user/dashboard'
 
-export function SectionNavigation({
+export function SectionNavigation<SEC_TYPE>({
     currentSection,
     onSectionNavigation,
     items
 }: {
-    currentSection?: UserDashboardSection
-    onSectionNavigation: (section: UserDashboardSection) => void
+    currentSection: SEC_TYPE
+    onSectionNavigation: (section: SEC_TYPE) => void
     items: {
         title: string
         icon?: LucideIcon
         isActive?: boolean
         items?: {
             title: string
-            section: UserDashboardSection
+            section: SEC_TYPE
         }[]
     }[]
 }) {

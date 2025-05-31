@@ -1,4 +1,4 @@
-import { AppSidebar } from '@/components/user/app-sidebar'
+import { AppSidebar, AppSidebarNavigationType } from '@/components/user/app-sidebar'
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -9,13 +9,42 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
-import { useUserDashboard } from '@/context/user/dashboard'
+import { UserDashboardSection, useUserDashboard } from '@/context/user/dashboard'
 import ParkingLots from '@/components/user/sections/parking-lots'
 import Reservations from '@/components/user/sections/reservations'
 import Profile from '@/components/user/sections/profile'
+import { useUserAuth } from '@/context/user/auth'
+import { SquareTerminal } from 'lucide-react'
+
+const nav = [
+    {
+        title: 'Access',
+        icon: SquareTerminal,
+        isActive: true,
+        items: [
+            {
+                title: 'Overview',
+                section: 'overview' as UserDashboardSection
+            },
+            {
+                title: 'Parking Lots',
+                section: 'parking-lots' as UserDashboardSection
+            },
+            {
+                title: 'Reservations',
+                section: 'reservations' as UserDashboardSection
+            },
+            {
+                title: 'Profile',
+                section: 'profile' as UserDashboardSection
+            }
+        ]
+    }
+] as AppSidebarNavigationType<UserDashboardSection>[]
 
 export default function Dashboard() {
-    const { activeSection } = useUserDashboard()
+    const { activeSection, setActiveSection, headerTitle } = useUserDashboard()
+    const { user } = useUserAuth()
 
     const renderContent = () => {
         switch (activeSection) {
@@ -54,7 +83,20 @@ export default function Dashboard() {
 
     return (
         <SidebarProvider>
-            <AppSidebar />
+            <AppSidebar
+                navigation={nav}
+                user={{
+                    username: user?.username || 'Admin',
+                    email: user?.email || 'admin@example.com',
+                    avatarUrl: user?.avatarUrl || '/avatars/default.jpg',
+                    userType: user?.userType || 'Admin'
+                }}
+                header={headerTitle}
+                activeSection={activeSection}
+                updateSection={(section: UserDashboardSection) => {
+                    setActiveSection(section)
+                }}
+            />
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
                     <div className="flex items-center gap-2 px-4">
