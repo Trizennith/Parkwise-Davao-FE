@@ -3,8 +3,6 @@
 import * as React from 'react'
 import {
     AudioWaveform,
-    BookOpen,
-    Bot,
     Command,
     Frame,
     GalleryVerticalEnd,
@@ -17,7 +15,6 @@ import {
 import { NavMain } from '@/components/main-dashboard/nav-main'
 import { NavProjects } from '@/components/main-dashboard/nav-projects'
 import { NavUser } from '@/components/main-dashboard/nav-user'
-import { TeamSwitcher } from '@/components/main-dashboard/team-switcher'
 import {
     Sidebar,
     SidebarContent,
@@ -25,6 +22,7 @@ import {
     SidebarHeader,
     SidebarRail
 } from '@/components/ui/sidebar'
+import { useDashboard } from '@/context/main-dashboard'
 
 // This is sample data.
 const data = {
@@ -67,48 +65,6 @@ const data = {
                 },
                 {
                     title: 'Settings',
-                    url: '#'
-                }
-            ]
-        },
-        {
-            title: 'Models',
-            url: '#',
-            icon: Bot,
-            items: [
-                {
-                    title: 'Genesis',
-                    url: '#'
-                },
-                {
-                    title: 'Explorer',
-                    url: '#'
-                },
-                {
-                    title: 'Quantum',
-                    url: '#'
-                }
-            ]
-        },
-        {
-            title: 'Documentation',
-            url: '#',
-            icon: BookOpen,
-            items: [
-                {
-                    title: 'Introduction',
-                    url: '#'
-                },
-                {
-                    title: 'Get Started',
-                    url: '#'
-                },
-                {
-                    title: 'Tutorials',
-                    url: '#'
-                },
-                {
-                    title: 'Changelog',
                     url: '#'
                 }
             ]
@@ -157,10 +113,19 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+    const { headerTitle } = useDashboard()
     return (
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader>
-                <TeamSwitcher teams={data.teams} />
+                <div className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex flex-row gap-2 mt-2">
+                    <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                        <Command className="size-4" />
+                    </div>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                        <span className="truncate font-medium">{headerTitle.title}</span>
+                        <span className="truncate text-xs">{headerTitle.description}</span>
+                    </div>
+                </div>
             </SidebarHeader>
             <SidebarContent>
                 <NavMain items={data.navMain} />
