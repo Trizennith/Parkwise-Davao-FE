@@ -9,10 +9,9 @@ import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
-    SidebarGroup,
-    SidebarGroupLabel,
     SidebarHeader,
-    SidebarRail
+    SidebarRail,
+    useSidebar
 } from '@/components/ui/sidebar'
 import { ModeToggle } from '../mode-toggle'
 
@@ -36,6 +35,8 @@ export function AppSidebar<SEC_TYPE>({
     navigation: AppSidebarNavigationType<SEC_TYPE>[]
     updateSection: (section: SEC_TYPE) => void
 }) {
+    const { state } = useSidebar()
+
     return (
         <Sidebar collapsible="icon">
             <SidebarHeader>
@@ -47,6 +48,12 @@ export function AppSidebar<SEC_TYPE>({
                         <span className="truncate font-medium">{header.title}</span>
                         <span className="truncate text-xs">{header.description}</span>
                     </div>
+
+                    {state === 'expanded' && (
+                        <div>
+                            <ModeToggle />
+                        </div>
+                    )}
                 </div>
             </SidebarHeader>
             <SidebarContent>

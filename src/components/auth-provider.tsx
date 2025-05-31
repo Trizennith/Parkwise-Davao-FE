@@ -16,7 +16,12 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     }
 
     // Check if the current path is for user routes
-    if (path.startsWith('/login') || path.startsWith('/register') || path.startsWith('/user')) {
+    if (
+        path.startsWith('/login') ||
+        path.startsWith('/register') ||
+        path.startsWith('/user') ||
+        path.startsWith('/')
+    ) {
         return <UserAuthProvider>{children}</UserAuthProvider>
     }
 
