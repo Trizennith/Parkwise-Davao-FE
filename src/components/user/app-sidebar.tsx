@@ -60,6 +60,7 @@ export function AppSidebar<SEC_TYPE>({
             </SidebarHeader>
             <SidebarContent>
                 <SectionNavigation
+                    label="Services"
                     currentSection={activeSection}
                     onSectionNavigation={(section) => {
                         updateSection(section)

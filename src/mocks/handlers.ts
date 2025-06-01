@@ -101,7 +101,7 @@ interface ParkingLot {
     address: string
     totalSpaces: number
     availableSpaces: number
-    status: 'active' | 'maintenance'
+    status: 'active' | 'maintenance' | 'closed'
 }
 
 // Mock data
@@ -361,7 +361,7 @@ export const handlers = [
         const updatedLot: ParkingLot = {
             ...parkingLots[index],
             ...updates,
-            status: (updates.status as 'active' | 'maintenance') || parkingLots[index].status
+            status: (updates.status as 'active' | 'maintenance' | 'closed') || parkingLots[index].status
         }
         parkingLots[index] = updatedLot
         return corsResponse(HttpResponse.json(updatedLot))

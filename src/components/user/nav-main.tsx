@@ -15,11 +15,13 @@ import {
 } from '@/components/ui/sidebar'
 
 export function SectionNavigation<SEC_TYPE>({
+    label,
     currentSection,
     onSectionNavigation,
     items
 }: {
     currentSection: SEC_TYPE
+    label: string
     onSectionNavigation: (section: SEC_TYPE) => void
     items: {
         title: string
@@ -33,7 +35,7 @@ export function SectionNavigation<SEC_TYPE>({
 }) {
     return (
         <SidebarGroup>
-            <SidebarGroupLabel>Platform</SidebarGroupLabel>
+            <SidebarGroupLabel>{label}</SidebarGroupLabel>
             <SidebarMenu>
                 {items.map((item) => (
                     <Collapsible

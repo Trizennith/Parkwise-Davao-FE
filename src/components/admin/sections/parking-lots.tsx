@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MapPicker, OnLocationClickType } from '@/components/admin/map-picker'
+import { MapPicker, OnLocationClickType, ParkingLotStatus } from '@/components/admin/map-picker'
 import { Button } from '@/components/ui/button'
 import {
     Dialog,
@@ -42,6 +42,7 @@ import {
     getSortedRowModel
 } from '@tanstack/react-table'
 import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 
 const TEST_MODE = import.meta.env.VITE_TEST_MODE === 'true'
 
@@ -140,7 +141,9 @@ export function ParkingLots() {
         {
             accessorKey: 'address',
             header: 'Address',
-            cell: ({ row }) => <div className="max-w-[300px] truncate">{row.getValue('address')}</div>
+            cell: ({ row }) => (
+                <div className="max-w-[300px] truncate">{row.getValue('address')}</div>
+            )
         },
         {
             accessorKey: 'location',
@@ -332,29 +335,43 @@ function DialogCreateParkingLot({
 }: {
     isDialogOpen: boolean
     setIsDialogOpen: (open: boolean) => void
-    handleLocationSelect: (data: OnLocationClickType) => void
+    handleLocationSelect: (data: OnLocationClickType & { status: ParkingLotStatus }) => void
     selectedLot: ParkingLot | null
 }) {
+    const [status, setStatus] = useState<ParkingLotStatus>(selectedLot?.status || 'active')
+
+    const handleSubmit = (location: OnLocationClickType) => {
+        handleLocationSelect({
+            ...location,
+            status
+        })
+    }
+
     return (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="sm:max-w-[1920px]">
                 <DialogHeader>
-                    <DialogTitle>
-                        {selectedLot ? 'Edit Parking Lot' : 'Add New Parking Lot'}
-                    </DialogTitle>
+                    <div className="flex gap-2 ">
+                        <DialogTitle>
+                            {selectedLot ? 'Edit Parking Lot' : 'Add New Parking Lot'}
+                        </DialogTitle>
+                        <Separator orientation='vertical'/>
+                        <DialogDescription className="flex items-center gap-2">
+                            <MapPin className="h-5 w-5" />
+                            Select Parking Location
+                        </DialogDescription>
+                    </div>
                     <DialogDescription>
                         {selectedLot
                             ? 'Update the parking lot details below.'
                             : 'Fill in the details to add a new parking lot.'}
                     </DialogDescription>
-                    <CardTitle className="flex items-center gap-2">
-                        <MapPin className="h-5 w-5" />
-                        Select Parking Location
-                    </CardTitle>
                 </DialogHeader>
                 <div className="gap-4">
                     <MapPicker
-                        onLocationSelect={handleLocationSelect}
+                        setStatus={setStatus}
+                        status={status}
+                        onLocationSelect={handleSubmit}
                         initialPosition={
                             selectedLot
                                 ? [selectedLot.location.lat, selectedLot.location.lng]

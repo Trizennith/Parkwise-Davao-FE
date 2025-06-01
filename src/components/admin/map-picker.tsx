@@ -8,6 +8,13 @@ import { Label } from '@/components/ui/label'
 import { Loader2, ZoomIn, ZoomOut, Navigation } from 'lucide-react'
 import { useTheme } from '@/components/theme-provider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/components/ui/select'
 
 // Fix for default marker icon
 const icon = new Icon({
@@ -129,9 +136,35 @@ interface MapPickerPropsType {
     onLocationSelect: (location: OnLocationClickType) => void
     initialPosition?: [number, number]
     initialValues?: OnLocationClickType
+    status: ParkingLotStatus
+    setStatus: (value: ParkingLotStatus) => void
+}
+export type ParkingLotStatus = 'active' | 'maintenance' | 'closed'
+
+function StatusSelections({
+    status,
+    setStatus
+}: {
+    status: ParkingLotStatus
+    setStatus: (value: ParkingLotStatus) => void
+}) {
+    return (
+        <Select value={status} onValueChange={(value: ParkingLotStatus) => setStatus(value)}>
+            <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="maintenance">Maintenance</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+        </Select>
+    )
 }
 
 export function MapPicker({
+    status,
+    setStatus,
     onLocationSelect,
     initialPosition,
     initialValues
@@ -257,6 +290,7 @@ export function MapPicker({
                                 placeholder="Enter total parking spaces"
                             />
                         </div>
+
                         <div className="space-y-2">
                             <Label htmlFor="available-spaces">Available Spaces</Label>
                             <Input
@@ -269,6 +303,11 @@ export function MapPicker({
                                 placeholder="Enter available spaces"
                             />
                         </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="status">Status</Label>
+                        <StatusSelections status={status} setStatus={setStatus} />
                     </div>
 
                     {position && (
