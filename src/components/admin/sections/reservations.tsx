@@ -136,6 +136,20 @@ export function Reservations() {
             cell: ({ row }) => <div>{row.getValue('vehiclePlate')}</div>
         },
         {
+            accessorKey: 'notes',
+            header: 'Notes',
+            cell: ({ row }) => {
+                const notes = row.getValue('notes') as string
+                return notes ? (
+                    <div className="max-w-[200px] truncate" title={notes}>
+                        {notes}
+                    </div>
+                ) : (
+                    <div className="text-muted-foreground">-</div>
+                )
+            }
+        },
+        {
             accessorKey: 'startTime',
             header: 'Start Time',
             cell: ({ row }) => (

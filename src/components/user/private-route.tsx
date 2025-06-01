@@ -9,6 +9,7 @@ export default function PrivateRoute() {
   }
 
   if (!isAuthenticated) {
+    // Redirect to login page if user is not authenticated
     return <Navigate to="/login" replace />
   }
 

@@ -58,11 +58,6 @@ export default function Dashboard() {
             default:
                 return (
                     <div className="space-y-6">
-                        <div>
-                            <p className="text-muted-foreground">
-                                Welcome to your parking dashboard
-                            </p>
-                        </div>
                         <div className="flex flex-col gap-4">
                             <div className="col-span-1">
                                 <Reservations />

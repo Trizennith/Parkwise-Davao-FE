@@ -7,6 +7,7 @@ export interface Reservation {
     userId: string
     userName: string
     vehiclePlate: string
+    notes?: string
     startTime: string
     endTime: string
     status: 'active' | 'completed' | 'cancelled'

@@ -3,38 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 
-// Test mode flag - set to true to use mock data
-const TEST_MODE = true
-
-// Mock admin data for testing
-const MOCK_ADMINS = {
-    admin: {
-        id: 1,
-        username:'AdminUser',
-        email: 'admin@example.com',
-        userType: 'super_admin',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin'
-    },
-    moderator: {
-        id: 2,
-        username: 'ModeratorUser',
-        email: 'moderator@example.com',
-        userType: 'moderator',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=moderator'
-    }
-} as const
-
 export interface AdminUser {
     id: number
     username: string
     email: string
     userType: 'super_admin' | 'moderator'
     avatarUrl?: string
-}
-
-interface LoginRequest {
-    email: string
-    password: string
 }
 
 interface AdminAuthResponse {
@@ -64,7 +38,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
                 if (token) {
                     // Set the token in the API headers
                     api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-                    
+
                     const response = await api.get<AdminAuthResponse>('/api/admin/me')
                     setAdmin(response.data.admin)
                 }
@@ -88,11 +62,11 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
                 password
             })
             const { admin: adminData, token } = response.data
-            
+
             // Set the token in localStorage and API headers
             localStorage.setItem('admin_token', token)
             api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-            
+
             setAdmin(adminData)
             toast.success(`Welcome back, ${adminData.username}!`)
             navigate('/admin')
@@ -134,4 +108,4 @@ export function useAdminAuth() {
         throw new Error('useAdminAuth must be used within an AdminAuthProvider')
     }
     return context
-} 
+}

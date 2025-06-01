@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 
-export interface User {
+interface User {
     id: number
     firstName: string
     lastName: string
@@ -13,12 +13,7 @@ export interface User {
     status: 'Active' | 'Inactive'
     lastLogin: string
     createdAt: string
-    avatarUrl?: string
-}
-
-interface LoginRequest {
-    email: string
-    password: string
+    avatarUrl: string
 }
 
 interface LoginResponse {
@@ -31,7 +26,13 @@ interface UserAuthContextType {
     isAuthenticated: boolean
     isLoading: boolean
     login: (email: string, password: string) => Promise<void>
-    register: (firstName: string, lastName: string, username: string, email: string, password: string) => Promise<void>
+    register: (
+        firstName: string,
+        lastName: string,
+        username: string,
+        email: string,
+        password: string
+    ) => Promise<void>
     logout: () => void
 }
 
@@ -43,18 +44,18 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     const navigate = useNavigate()
 
     useEffect(() => {
-        const initializeUserAuth = async () => {
+        const checkAuth = async () => {
             try {
                 const token = localStorage.getItem('token')
                 if (token) {
                     // Set the token in the API headers
                     api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-                    
+
                     const response = await api.get<User>('/api/users/me')
                     setUser(response.data)
                 }
             } catch (error) {
-                console.error('UserAuth initialization error:', error)
+                console.error('Auth check failed:', error)
                 localStorage.removeItem('token')
                 delete api.defaults.headers.common['Authorization']
             } finally {
@@ -62,27 +63,31 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
             }
         }
 
-        initializeUserAuth()
+        checkAuth()
     }, [])
 
     const login = async (email: string, password: string) => {
         try {
-            const response = await api.post<LoginResponse>('/api/auth/login', {
+            setIsLoading(true)
+            const response = await api.post<LoginResponse>('/api/user/login', {
                 email,
                 password
             })
             const { user: userData, token } = response.data
-            
+
             // Set the token in localStorage and API headers
             localStorage.setItem('token', token)
             api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-            
+
             setUser(userData)
             toast.success(`Welcome back, ${userData.firstName}!`)
-            navigate('/')
+            navigate('/user')
         } catch (error) {
-            toast.error('Invalid credentials. Please try again.')
+            console.error('Login failed:', error)
+            toast.error('Invalid credentials')
             throw error
+        } finally {
+            setIsLoading(false)
         }
     }
 
@@ -94,7 +99,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         password: string
     ) => {
         try {
-            const response = await api.post<User>('/api/users', {
+            await api.post<User>('/api/users', {
                 firstName,
                 lastName,
                 username,
@@ -111,15 +116,11 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const logout = () => {
+        setUser(null)
         localStorage.removeItem('token')
         delete api.defaults.headers.common['Authorization']
-        setUser(null)
         toast.success('Logged out successfully')
         navigate('/login')
-    }
-
-    if (isLoading) {
-        return <div>Loading...</div> // You can replace this with a proper loading component
     }
 
     return (

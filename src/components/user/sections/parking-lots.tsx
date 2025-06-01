@@ -1,7 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { api } from '@/lib/api'
-import type { ParkingLocation, ParkingSlot } from '@/types'
+import { useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,256 +11,240 @@ import {
     DialogTrigger
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { Badge } from '@/components/ui/badge'
+import { Loader2, MapPin } from 'lucide-react'
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import { Icon } from 'leaflet'
+import { useTheme } from '@/components/theme-provider'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { useApiQuery, useApiMutation } from '@/hooks/use-api-query'
 
-// Test mode flag
-const TEST_MODE = true
+// Fix for default marker icon
+const icon = new Icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+})
 
-// Mock data for testing
-const MOCK_PARKING_LOTS: ParkingLocation[] = [
-    {
-        id: 1,
-        name: 'Downtown Parking',
-        address: '123 Main St, Davao City',
-        total_slots: 50,
-        available_slots_count: 30,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-    },
-    {
-        id: 2,
-        name: 'SM Parking',
-        address: 'SM City Davao, Ecoland',
-        total_slots: 100,
-        available_slots_count: 45,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-    },
-    {
-        id: 3,
-        name: 'Abreeza Parking',
-        address: 'Abreeza Mall, Bajada',
-        total_slots: 75,
-        available_slots_count: 20,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+interface ParkingLot {
+    id: string
+    name: string
+    location: {
+        lat: number
+        lng: number
     }
-]
+    address: string
+    totalSpaces: number
+    availableSpaces: number
+    status: 'active' | 'maintenance'
+}
 
-const MOCK_SLOTS: Record<number, ParkingSlot[]> = {
-    1: [
-        { 
-            id: 1, 
-            location: 1,
-            slot_number: 'A1', 
-            is_available: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        },
-        { 
-            id: 2, 
-            location: 1,
-            slot_number: 'A2', 
-            is_available: false,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        },
-        { 
-            id: 3, 
-            location: 1,
-            slot_number: 'A3', 
-            is_available: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        }
-    ],
-    2: [
-        { 
-            id: 4, 
-            location: 2,
-            slot_number: 'B1', 
-            is_available: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        },
-        { 
-            id: 5, 
-            location: 2,
-            slot_number: 'B2', 
-            is_available: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        },
-        { 
-            id: 6, 
-            location: 2,
-            slot_number: 'B3', 
-            is_available: false,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        }
-    ],
-    3: [
-        { 
-            id: 7, 
-            location: 3,
-            slot_number: 'C1', 
-            is_available: false,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        },
-        { 
-            id: 8, 
-            location: 3,
-            slot_number: 'C2', 
-            is_available: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        },
-        { 
-            id: 9, 
-            location: 3,
-            slot_number: 'C3', 
-            is_available: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        }
-    ]
+interface Reservation {
+    id: string
+    parkingLotId: string
+    startTime: string
+    endTime: string
+    status: 'active' | 'completed' | 'cancelled'
 }
 
 export default function ParkingLots() {
-    const [selectedLot, setSelectedLot] = useState<ParkingLocation | null>(null)
-    const [isReserving, setIsReserving] = useState(false)
+    const [selectedLot, setSelectedLot] = useState<ParkingLot | null>(null)
+    const [showMap, setShowMap] = useState(false)
+    const [showReservation, setShowReservation] = useState(false)
+    const [vehiclePlate, setVehiclePlate] = useState('')
+    const [notes, setNotes] = useState('')
+    const queryClient = useQueryClient()
 
-    const { data: parkingLots, isLoading } = useQuery<ParkingLocation[], Error>({
-        queryKey: ['parkingLots'],
-        queryFn: async (): Promise<ParkingLocation[]> => {
-            if (TEST_MODE) {
-                return MOCK_PARKING_LOTS
+    // Fetch parking lots using the new hook
+    const { data: parkingLots, isLoading } = useApiQuery<ParkingLot[]>(
+        ['parking-lots'],
+        '/api/parking-lots'
+    )
+
+    // Create reservation using the new hook
+    const createReservation = useApiMutation<Reservation, { lotId: string; vehiclePlate: string; notes: string }>(
+        '/api/reservations',
+        'post',
+        {
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['reservations'] })
+                toast.success('Parking space reserved successfully!')
+                setShowReservation(false)
+                setVehiclePlate('')
+                setNotes('')
             }
-            const response = await api.get('/api/parking/parking-lots/')
-            return response.data as ParkingLocation[]
         }
-    })
-
-    const { data: slots } = useQuery<ParkingSlot[], Error>({
-        queryKey: ['slots', selectedLot?.id],
-        queryFn: async (): Promise<ParkingSlot[]> => {
-            if (!selectedLot) return []
-            if (TEST_MODE) {
-                return MOCK_SLOTS[selectedLot.id] || []
-            }
-            const response = await api.get(`/api/parking/parking-lots/${selectedLot.id}/slots/`)
-            return response.data as ParkingSlot[]
-        },
-        enabled: !!selectedLot
-    })
-
-    const handleReserve = async (slotId: number) => {
-        setIsReserving(true)
-        try {
-            if (TEST_MODE) {
-                // Simulate API delay
-                await new Promise(resolve => setTimeout(resolve, 1000))
-                toast.success('Slot reserved successfully! (TEST MODE)')
-                return
-            }
-            await api.post('/api/reservations/reservations/', {
-                slot: slotId,
-                start_time: new Date().toISOString(),
-                end_time: new Date(Date.now() + 3600000).toISOString() // 1 hour from now
-            })
-            toast.success('Slot reserved successfully!')
-        } catch {
-            toast.error('Failed to reserve slot. Please try again.')
-        } finally {
-            setIsReserving(false)
-        }
-    }
+    )
 
     if (isLoading) {
-        return <div>Loading...</div>
+        return (
+            <div className="flex items-center justify-center h-[400px]">
+                <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-muted-foreground">Loading parking lots...</span>
+                </div>
+            </div>
+        )
+    }
+
+    const handleReserve = () => {
+        if (!selectedLot || !vehiclePlate) return
+
+        createReservation.mutate({
+            lotId: selectedLot.id,
+            vehiclePlate,
+            notes
+        })
     }
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold">Parking Lots</h1>
-                <p className="text-muted-foreground">View and reserve parking slots</p>
-            </div>
-
+        <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {parkingLots?.map((lot: ParkingLocation) => (
+                {parkingLots?.map((lot) => (
                     <Card key={lot.id}>
                         <CardHeader>
                             <CardTitle>{lot.name}</CardTitle>
                             <CardDescription>{lot.address}</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">
-                                            Total Slots
-                                        </span>
-                                        <span className="font-medium">{lot.total_slots}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">
-                                            Available Slots
-                                        </span>
-                                        <span className="font-medium">
-                                            {lot.available_slots_count}
-                                        </span>
-                                    </div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between">
+                                    <span>Available Spaces:</span>
+                                    <Badge variant={lot.availableSpaces > 0 ? 'default' : 'destructive'}>
+                                        {lot.availableSpaces} / {lot.totalSpaces}
+                                    </Badge>
                                 </div>
-                                <Dialog>
-                                    <DialogTrigger asChild>
-                                        <Button
-                                            className="w-full"
-                                            onClick={() => setSelectedLot(lot)}
-                                        >
-                                            View Slots
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>{lot.name} - Available Slots</DialogTitle>
-                                            <DialogDescription>
-                                                Select a slot to reserve
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <div className="grid gap-4">
-                                            {slots?.map((slot: ParkingSlot) => (
-                                                <div
-                                                    key={slot.id}
-                                                    className="flex items-center justify-between rounded-lg border p-4"
-                                                >
-                                                    <div>
-                                                        <p className="font-medium">
-                                                            Slot {slot.slot_number}
-                                                        </p>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            {slot.is_available
-                                                                ? 'Available'
-                                                                : 'Occupied'}
-                                                        </p>
-                                                    </div>
-                                                    <Button
-                                                        onClick={() => handleReserve(slot.id)}
-                                                        disabled={!slot.is_available || isReserving}
-                                                    >
-                                                        {isReserving ? 'Reserving...' : 'Reserve'}
-                                                    </Button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </DialogContent>
-                                </Dialog>
+                                <div className="flex justify-between">
+                                    <span>Status:</span>
+                                    <Badge variant={lot.status === 'active' ? 'default' : 'warning'}>
+                                        {lot.status}
+                                    </Badge>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Coordinates:</span>
+                                    <span className="text-sm text-muted-foreground">
+                                        {lot.location.lat.toFixed(6)}, {lot.location.lng.toFixed(6)}
+                                    </span>
+                                </div>
+                                <div className="flex flex-col gap-2 pt-4">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            setSelectedLot(lot)
+                                            setShowMap(true)
+                                        }}
+                                    >
+                                        <MapPin className="w-4 h-4 mr-2" />
+                                        View on Map
+                                    </Button>
+                                    <Button
+                                        onClick={() => {
+                                            setSelectedLot(lot)
+                                            setShowReservation(true)
+                                        }}
+                                        disabled={lot.availableSpaces === 0 || lot.status !== 'active'}
+                                    >
+                                        Reserve Space
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
                 ))}
             </div>
+
+            {/* Map Dialog */}
+            <Dialog open={showMap} onOpenChange={setShowMap}>
+                <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle>Parking Lot Location</DialogTitle>
+                        <DialogDescription>
+                            {selectedLot?.name} - {selectedLot?.address}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="h-[400px] w-full">
+                        <MapContainer
+                            center={[selectedLot?.location.lat || 0, selectedLot?.location.lng || 0]}
+                            zoom={15}
+                            style={{ height: '100%', width: '100%' }}
+                        >
+                            <TileLayer
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            />
+                            {selectedLot && (
+                                <Marker
+                                    position={[selectedLot.location.lat, selectedLot.location.lng]}
+                                    icon={icon}
+                                />
+                            )}
+                        </MapContainer>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Reservation Dialog */}
+            <Dialog open={showReservation} onOpenChange={setShowReservation}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reserve Parking Space</DialogTitle>
+                        <DialogDescription>
+                            Reserve a space at {selectedLot?.name}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="vehiclePlate">Vehicle Plate Number</Label>
+                            <Input
+                                id="vehiclePlate"
+                                value={vehiclePlate}
+                                onChange={(e) => setVehiclePlate(e.target.value)}
+                                placeholder="Enter your vehicle plate number"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="notes">Additional Notes (Optional)</Label>
+                            <Input
+                                id="notes"
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                placeholder="Any special requirements or notes"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Location Details</Label>
+                            <div className="text-sm text-muted-foreground">
+                                <p>Address: {selectedLot?.address}</p>
+                                <p>Coordinates: {selectedLot?.location.lat.toFixed(6)}, {selectedLot?.location.lng.toFixed(6)}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowReservation(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleReserve}
+                            disabled={!vehiclePlate || createReservation.isPending}
+                        >
+                            {createReservation.isPending ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Reserving...
+                                </>
+                            ) : (
+                                'Confirm Reservation'
+                            )}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

@@ -10,8 +10,10 @@ import {
     SelectValue
 } from '@/components/ui/select'
 import { Reservation } from '@/services/reservations'
+import { User } from '@/services/users'
 import { useQuery } from '@tanstack/react-query'
 import { parkingLotsService } from '@/services/parking-lots'
+import { usersService } from '@/services/users'
 
 interface ReservationFormProps {
     onSubmit: (data: Omit<Reservation, 'id' | 'createdAt'>) => void
@@ -25,6 +27,7 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
         userId: initialValues?.userId || '',
         userName: initialValues?.userName || '',
         vehiclePlate: initialValues?.vehiclePlate || '',
+        notes: initialValues?.notes || '',
         startTime: initialValues?.startTime
             ? new Date(initialValues.startTime).toISOString().slice(0, 16)
             : '',
@@ -34,10 +37,15 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
         status: initialValues?.status || 'active'
     })
 
-    // Fetch parking lots for the dropdown
+    // Fetch parking lots and users for the dropdowns
     const { data: parkingLots = [] } = useQuery({
         queryKey: ['parkingLots'],
         queryFn: parkingLotsService.getAll
+    })
+
+    const { data: users = [] } = useQuery<User[]>({
+        queryKey: ['users'],
+        queryFn: usersService.getAll
     })
 
     useEffect(() => {
@@ -48,6 +56,7 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
                 userId: initialValues.userId,
                 userName: initialValues.userName,
                 vehiclePlate: initialValues.vehiclePlate,
+                notes: initialValues.notes || '',
                 startTime: new Date(initialValues.startTime).toISOString().slice(0, 16),
                 endTime: new Date(initialValues.endTime).toISOString().slice(0, 16),
                 status: initialValues.status
@@ -71,6 +80,17 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
                 ...prev,
                 parkingLotId: selectedLot.id,
                 parkingLotName: selectedLot.name
+            }))
+        }
+    }
+
+    const handleUserChange = (userId: string) => {
+        const selectedUser = users.find(user => user.id === userId)
+        if (selectedUser) {
+            setFormData(prev => ({
+                ...prev,
+                userId: selectedUser.id,
+                userName: `${selectedUser.firstName} ${selectedUser.lastName}`
             }))
         }
     }
@@ -119,15 +139,22 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="userName">User Name</Label>
-                    <Input
-                        id="userName"
-                        value={formData.userName}
-                        onChange={e =>
-                            setFormData(prev => ({ ...prev, userName: e.target.value }))
-                        }
-                        required
-                    />
+                    <Label htmlFor="user">User</Label>
+                    <Select
+                        value={formData.userId}
+                        onValueChange={handleUserChange}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a user" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {users.map(user => (
+                                <SelectItem key={user.id} value={user.id}>
+                                    {user.firstName} {user.lastName}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -169,6 +196,19 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
                         required
                     />
                 </div>
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="notes">Additional Notes</Label>
+                <textarea
+                    id="notes"
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Add any special instructions or notes for the reservation"
+                    value={formData.notes}
+                    onChange={e =>
+                        setFormData(prev => ({ ...prev, notes: e.target.value }))
+                    }
+                />
             </div>
 
             <div className="flex justify-end">

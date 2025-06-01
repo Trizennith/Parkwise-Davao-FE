@@ -14,7 +14,24 @@ import AdminLogin from '@/pages/admin/auth/login'
 import UserDashboard from '@/pages/user/dashboard'
 import AdminDashboard from '@/pages/admin/dashboard'
 
-const queryClient = new QueryClient()
+// Configure QueryClient with better defaults for RESTful API
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes
+      retry: 3,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+      refetchOnReconnect: true,
+    },
+    mutations: {
+      retry: 2,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    },
+  },
+})
 
 function App() {
     return (
