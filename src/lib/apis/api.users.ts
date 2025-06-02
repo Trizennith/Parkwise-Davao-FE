@@ -23,8 +23,13 @@ export interface PaginatedResponse<T> {
 
 export const usersService = {
     // Get all users (admin only)
-    getAll: async (): Promise<PaginatedResponse<User>> => {
-        const { data } = await api.get<PaginatedResponse<User>>(`${BASE_API_URL}${API_ENDPOINTS.ADMIN.USERS}`)
+    getAll: async (page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<User>> => {
+        const { data } = await api.get<PaginatedResponse<User>>(`${BASE_API_URL}${API_ENDPOINTS.ADMIN.USERS}`, {
+            params: {
+                page,
+                page_size: pageSize
+            }
+        })
         return data
     },
 

@@ -1,4 +1,4 @@
-import { FC } from 'react'
+import { FC, useState } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/ui/data-table'
 import { Button } from '@/components/ui/button'
@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { API_ENDPOINTS } from '@/lib/apis/api.constants'
-import { PaginatedResponse } from '@/lib/apis/api.users'
+import { PaginatedResponse, usersService } from '@/lib/apis/api.users'
 
 interface User {
     id: number
@@ -141,13 +141,12 @@ const columns: ColumnDef<User>[] = [
 
 export const Users: FC = () => {
     const queryClient = useQueryClient()
+    const [page, setPage] = useState(1)
+    const [pageSize, setPageSize] = useState(10)
 
     const { data: usersResponse, isLoading } = useQuery<PaginatedResponse<User>>({
-        queryKey: ['users'],
-        queryFn: async (): Promise<PaginatedResponse<User>> => {
-            const response = await api.get<PaginatedResponse<User>>(API_ENDPOINTS.ADMIN.USERS)
-            return response.data
-        }
+        queryKey: ['users', page, pageSize],
+        queryFn: () => usersService.getAll(page, pageSize)
     })
 
     const deleteUser = useMutation({
@@ -188,6 +187,13 @@ export const Users: FC = () => {
                 data={usersResponse?.results ?? []} 
                 searchKey="username"
                 totalCount={usersResponse?.count ?? 0}
+                currentPage={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(newSize) => {
+                    setPageSize(newSize)
+                    setPage(1) // Reset to first page when changing page size
+                }}
             />
         </div>
     )

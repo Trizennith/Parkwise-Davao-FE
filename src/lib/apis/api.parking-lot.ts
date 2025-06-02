@@ -40,8 +40,13 @@ export interface PaginatedResponse<T> {
 
 export const parkingLotsService = {
     // Get all parking lots
-    getAll: async (): Promise<PaginatedResponse<ParkingLot>> => {
-        const { data } = await api.get<PaginatedResponse<ParkingLot>>(`${BASE_API_URL}${API_ENDPOINTS.ADMIN.PARKING_LOTS}`)
+    getAll: async (page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<ParkingLot>> => {
+        const { data } = await api.get<PaginatedResponse<ParkingLot>>(`${BASE_API_URL}${API_ENDPOINTS.ADMIN.PARKING_LOTS}`, {
+            params: {
+                page,
+                page_size: pageSize
+            }
+        })
         return data
     },
 

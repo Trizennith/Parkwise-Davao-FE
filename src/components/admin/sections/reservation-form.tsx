@@ -12,10 +12,18 @@ import {
 import { Reservation, CreateReservationRequest } from '@/lib/apis/api.reservations'
 import { User } from '@/lib/apis/api.users'
 import { useQuery } from '@tanstack/react-query'
-import { parkingLotsService, ParkingLot, ParkingSpace } from '@/lib/apis/api.parking-lot'
+import { parkingLotsService, ParkingLot } from '@/lib/apis/api.parking-lot'
 import { usersService } from '@/lib/apis/api.users'
 import { api } from '@/lib/apis/api.base'
 import { BASE_API_URL, API_ENDPOINTS } from '@/lib/apis/api.constants'
+
+// Define a more flexible ParkingSpace type for the form
+interface FormParkingSpace {
+    id: number
+    parking_lot: number
+    space_number: string
+    status: string
+}
 
 interface ReservationFormProps {
     onSubmit: (data: CreateReservationRequest) => void
@@ -51,7 +59,14 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
     // Fetch available spaces for the selected parking lot
     const { data: availableSpaces } = useQuery({
         queryKey: ['availableSpaces', formData.parking_lot],
-        queryFn: () => parkingLotsService.getAvailableSpaces(formData.parking_lot),
+        queryFn: async () => {
+            const spaces = await parkingLotsService.getAvailableSpaces(formData.parking_lot)
+            // If we're editing and the current space isn't in the available spaces, add it
+            if (initialValues?.parking_space && !spaces.some(space => space.id === initialValues.parking_space.id)) {
+                return [...spaces, initialValues.parking_space as FormParkingSpace]
+            }
+            return spaces as FormParkingSpace[]
+        },
         enabled: formData.parking_lot > 0
     })
 
@@ -146,7 +161,7 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
                             <SelectValue placeholder="Select a parking space" />
                         </SelectTrigger>
                         <SelectContent>
-                            {availableSpaces?.map((space: ParkingSpace) => (
+                            {availableSpaces?.map((space: FormParkingSpace) => (
                                 <SelectItem key={space.id} value={space.id.toString()}>
                                     Space {space.space_number}
                                 </SelectItem>

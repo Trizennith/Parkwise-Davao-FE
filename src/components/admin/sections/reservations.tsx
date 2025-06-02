@@ -31,12 +31,14 @@ const TEST_MODE = import.meta.env.VITE_TEST_MODE === 'true'
 export function Reservations() {
     const [isOpen, setIsOpen] = useState(false)
     const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
+    const [page, setPage] = useState(1)
+    const [pageSize, setPageSize] = useState(10)
     const queryClient = useQueryClient()
 
     // Fetch reservations
     const { data: reservationsResponse, isLoading } = useQuery<PaginatedResponse<Reservation>>({
-        queryKey: ['reservations'],
-        queryFn: reservationsService.getAll
+        queryKey: ['reservations', page, pageSize],
+        queryFn: () => reservationsService.getAll(page, pageSize)
     })
 
     // Create mutation
@@ -262,6 +264,13 @@ export function Reservations() {
                 data={(reservationsResponse?.results as Reservation[]) ?? []} 
                 searchKey="vehicle_plate"
                 totalCount={reservationsResponse?.count ?? 0}
+                currentPage={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(newSize) => {
+                    setPageSize(newSize)
+                    setPage(1) // Reset to first page when changing page size
+                }}
             />
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>

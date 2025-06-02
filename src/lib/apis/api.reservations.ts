@@ -49,8 +49,13 @@ export interface PaginatedResponse<T> {
 
 export const reservationsService = {
     // Get all reservations (admin only)
-    getAll: async (): Promise<PaginatedResponse<Reservation>> => {
-        const { data } = await api.get<PaginatedResponse<Reservation>>(`${BASE_API_URL}${API_ENDPOINTS.ADMIN.RESERVATIONS}`)
+    getAll: async (page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<Reservation>> => {
+        const { data } = await api.get<PaginatedResponse<Reservation>>(`${BASE_API_URL}${API_ENDPOINTS.ADMIN.RESERVATIONS}`, {
+            params: {
+                page,
+                page_size: pageSize
+            }
+        })
         return data
     },
 

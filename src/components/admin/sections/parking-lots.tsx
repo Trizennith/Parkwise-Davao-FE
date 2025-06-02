@@ -16,14 +16,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { parkingLotsService, ParkingLot, CreateParkingLotRequest } from '@/lib/apis/api.parking-lot'
 import { toast } from 'sonner'
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-} from '@/components/ui/table'
-import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -32,30 +24,24 @@ import {
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { MoreHorizontal } from 'lucide-react'
-import {
-    ColumnDef,
-    flexRender,
-    getCoreRowModel,
-    useReactTable,
-    getPaginationRowModel,
-    SortingState,
-    getSortedRowModel
-} from '@tanstack/react-table'
+import { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { StatusSelections, ParkingLotStatus } from '../../admin/status-selections'
 import { Label } from '@/components/ui/label'
+import { DataTable } from '@/components/ui/data-table'
 
 export function ParkingLots() {
     const [isOpen, setIsOpen] = useState(false)
     const [selectedLot, setSelectedLot] = useState<ParkingLot | null>(null)
-    const [sorting, setSorting] = useState<SortingState>([])
     const [status, setStatus] = useState<ParkingLotStatus>('active')
+    const [page, setPage] = useState(1)
+    const [pageSize, setPageSize] = useState(10)
     const queryClient = useQueryClient()
 
     const { data: parkingLotsResponse, isLoading } = useQuery({
-        queryKey: ['parkingLots'],
-        queryFn: () => parkingLotsService.getAll()
+        queryKey: ['parkingLots', page, pageSize],
+        queryFn: () => parkingLotsService.getAll(page, pageSize)
     })
 
     const parkingLots = parkingLotsResponse?.results || []
@@ -173,17 +159,7 @@ export function ParkingLots() {
         {
             accessorKey: 'hourly_rate',
             header: 'Hourly Rate',
-            cell: ({ row }) => `$${row.original.hourly_rate}`
-        },
-        {
-            accessorKey: 'latitude',
-            header: 'Latitude',
-            cell: ({ row }) => row.original.latitude
-        },
-        {
-            accessorKey: 'longitude',
-            header: 'Longitude',
-            cell: ({ row }) => row.original.longitude
+            cell: ({ row }) => `₱${parseFloat(row.original.hourly_rate).toFixed(2)}`
         },
         {
             accessorKey: 'status',
@@ -235,18 +211,6 @@ export function ParkingLots() {
         }
     ]
 
-    const table = useReactTable({
-        data: parkingLots,
-        columns,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        onSortingChange: setSorting,
-        getSortedRowModel: getSortedRowModel(),
-        state: {
-            sorting
-        }
-    })
-
     if (isLoading) {
         return <div>Loading...</div>
     }
@@ -261,51 +225,19 @@ export function ParkingLots() {
                 </Button>
             </div>
 
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id}>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                  header.column.columnDef.header,
-                                                  header.getContext()
-                                              )}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableHeader>
-                    <TableBody>
-                        {table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={row.getIsSelected() && 'selected'}
-                                >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
-                                            {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext()
-                                            )}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No results.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+            <DataTable 
+                columns={columns} 
+                data={parkingLots} 
+                searchKey="name"
+                totalCount={parkingLotsResponse?.count ?? 0}
+                currentPage={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(newSize) => {
+                    setPageSize(newSize)
+                    setPage(1) // Reset to first page when changing page size
+                }}
+            />
 
             <Dialog
                 open={isOpen}
@@ -317,7 +249,7 @@ export function ParkingLots() {
                     }
                 }}
             >
-                <DialogContent className="w-full  max-w-[1800px]">
+                <DialogContent className="w-full max-w-[1800px]">
                     <DialogHeader>
                         <DialogTitle>
                             {selectedLot ? 'Edit Parking Lot' : 'Add Parking Lot'}

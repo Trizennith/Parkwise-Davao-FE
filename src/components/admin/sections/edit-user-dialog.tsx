@@ -58,16 +58,29 @@ const formSchema = z.object({
         .min(3, 'Username must be at least 3 characters')
         .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
     email: z.string().email('Invalid email address'),
-    password: z.string()
-        .min(8, 'Password must be at least 8 characters')
-        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-        .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-        .regex(/[0-9]/, 'Password must contain at least one number')
-        .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
-    confirmPassword: z.string(),
+    password: z.string().optional()
+        .refine((val) => {
+            // If password is empty or undefined, validation passes
+            if (!val) return true;
+            // If password is provided, apply all validation rules
+            return val.length >= 8 &&
+                /[A-Z]/.test(val) &&
+                /[a-z]/.test(val) &&
+                /[0-9]/.test(val) &&
+                /[^A-Za-z0-9]/.test(val);
+        }, {
+            message: 'Password must be at least 8 characters and contain uppercase, lowercase, number, and special character'
+        }),
+    confirmPassword: z.string().optional(),
     role: z.enum(['user', 'admin']),
     status: z.enum(['active', 'inactive']),
-}).refine((data) => data.password === data.confirmPassword, {
+}).refine((data) => {
+    // Only validate password match if password is provided
+    if (data.password) {
+        return data.password === data.confirmPassword;
+    }
+    return true;
+}, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
 })

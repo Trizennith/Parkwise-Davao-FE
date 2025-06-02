@@ -3,7 +3,6 @@ import {
     flexRender,
     getCoreRowModel,
     useReactTable,
-    getPaginationRowModel,
     SortingState,
     getSortedRowModel,
     ColumnFiltersState,
@@ -21,12 +20,23 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useState } from 'react'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
     data: TData[]
     searchKey?: string
     totalCount?: number
+    onPageChange?: (page: number) => void
+    onPageSizeChange?: (pageSize: number) => void
+    pageSize?: number
+    currentPage?: number
 }
 
 export function DataTable<TData, TValue>({
@@ -34,6 +44,10 @@ export function DataTable<TData, TValue>({
     data,
     searchKey,
     totalCount,
+    onPageChange,
+    onPageSizeChange,
+    pageSize = 10,
+    currentPage = 1,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -42,7 +56,6 @@ export function DataTable<TData, TValue>({
         data,
         columns,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
         onSortingChange: setSorting,
         getSortedRowModel: getSortedRowModel(),
         onColumnFiltersChange: setColumnFilters,
@@ -51,6 +64,8 @@ export function DataTable<TData, TValue>({
             sorting,
             columnFilters,
         },
+        pageCount: totalCount ? Math.ceil(totalCount / pageSize) : undefined,
+        manualPagination: true,
     })
 
     return (
@@ -118,25 +133,47 @@ export function DataTable<TData, TValue>({
                 </Table>
             </div>
             <div className="flex items-center justify-between space-x-2 py-4">
-                <div className="text-sm text-muted-foreground">
-                    {totalCount !== undefined && (
-                        <span>Total: {totalCount} items</span>
-                    )}
+                <div className="flex items-center space-x-2">
+                    <p className="text-sm font-medium">Rows per page</p>
+                    <Select
+                        value={pageSize.toString()}
+                        onValueChange={(value) => {
+                            onPageSizeChange?.(Number(value))
+                        }}
+                    >
+                        <SelectTrigger className="h-8 w-[70px]">
+                            <SelectValue placeholder={pageSize} />
+                        </SelectTrigger>
+                        <SelectContent side="top">
+                            {[10, 20, 30, 40, 50].map((size) => (
+                                <SelectItem key={size} value={size.toString()}>
+                                    {size}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="flex items-center space-x-2">
+                    <div className="text-sm text-muted-foreground">
+                        {totalCount !== undefined && (
+                            <span>
+                                Page {currentPage} of {Math.ceil(totalCount / pageSize)}
+                            </span>
+                        )}
+                    </div>
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
+                        onClick={() => onPageChange?.(currentPage - 1)}
+                        disabled={currentPage <= 1}
                     >
                         Previous
                     </Button>
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => table.nextPage()}
-                        disabled={!table.getCanNextPage()}
+                        onClick={() => onPageChange?.(currentPage + 1)}
+                        disabled={currentPage >= Math.ceil((totalCount || 0) / pageSize)}
                     >
                         Next
                     </Button>
