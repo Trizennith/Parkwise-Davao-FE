@@ -12,8 +12,10 @@ import {
 import { Reservation, CreateReservationRequest } from '@/lib/apis/api.reservations'
 import { User } from '@/lib/apis/api.users'
 import { useQuery } from '@tanstack/react-query'
-import { parkingLotsService } from '@/lib/apis/api.parking-lot'
+import { parkingLotsService, ParkingLot } from '@/lib/apis/api.parking-lot'
 import { usersService } from '@/lib/apis/api.users'
+import { api } from '@/lib/apis/api.base'
+import { BASE_API_URL, API_ENDPOINTS } from '@/lib/apis/api.constants'
 
 interface ReservationFormProps {
     onSubmit: (data: CreateReservationRequest) => void
@@ -22,8 +24,11 @@ interface ReservationFormProps {
 
 export function ReservationForm({ onSubmit, initialValues }: ReservationFormProps) {
     const [formData, setFormData] = useState<CreateReservationRequest>({
-        parking_lot: initialValues?.parking_lot.id || 0,
-        parking_space: initialValues?.parking_space.id || 0,
+        parking_lot: initialValues?.parking_lot || 0,
+        parking_lot_name: initialValues?.parking_lot_name || '',
+        parking_space: initialValues?.parking_space?.id || 0,
+        user: initialValues?.user?.id || 0,
+        user_name: initialValues?.user_name || '',
         vehicle_plate: initialValues?.vehicle_plate || '',
         notes: initialValues?.notes || '',
         start_time: initialValues?.start_time
@@ -35,22 +40,31 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
     })
 
     // Fetch parking lots and users for the dropdowns
-    const { data: parkingLots = [] } = useQuery({
+    const { data: parkingLotsResponse } = useQuery({
         queryKey: ['parkingLots'],
-        queryFn: parkingLotsService.getAll
+        queryFn: async () => {
+            const response = await api.get<{ count: number; next: string | null; previous: string | null; results: ParkingLot[] }>(`${BASE_API_URL}${API_ENDPOINTS.ADMIN.PARKING_LOTS}`)
+            return response.data
+        }
     })
 
-    const { data: users = [] } = useQuery<User[]>({
+    const { data: usersResponse } = useQuery({
         queryKey: ['users'],
         queryFn: usersService.getAll
     })
 
+    // Generate array of numbers from 1 to 10 for parking spaces
+    const parkingSpaces = Array.from({ length: 10 }, (_, i) => i + 1)
+
     useEffect(() => {
         if (initialValues) {
             setFormData({
-                parking_lot: initialValues.parking_lot.id,
-                parking_space: initialValues.parking_space.id,
-                vehicle_plate: initialValues.vehicle_plate,
+                parking_lot: initialValues.parking_lot,
+                parking_lot_name: initialValues.parking_lot_name,
+                parking_space: initialValues.parking_space?.id || 0,
+                user: initialValues.user?.id || 0,
+                user_name: initialValues.user_name,
+                vehicle_plate: initialValues.vehicle_plate || '',
                 notes: initialValues.notes || '',
                 start_time: new Date(initialValues.start_time).toISOString().slice(0, 16),
                 end_time: new Date(initialValues.end_time).toISOString().slice(0, 16)
@@ -68,9 +82,28 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
     }
 
     const handleParkingLotChange = (parkingLotId: string) => {
+        const selectedLot = parkingLotsResponse?.results?.find(lot => lot.id === Number(parkingLotId))
         setFormData(prev => ({
             ...prev,
-            parking_lot: Number(parkingLotId)
+            parking_lot: Number(parkingLotId),
+            parking_lot_name: selectedLot?.name || '',
+            parking_space: 0 // Reset parking space when parking lot changes
+        }))
+    }
+
+    const handleUserChange = (userId: string) => {
+        const selectedUser = usersResponse?.results?.find(user => user.id === Number(userId))
+        setFormData(prev => ({
+            ...prev,
+            user: Number(userId),
+            user_name: selectedUser ? `${selectedUser.first_name} ${selectedUser.last_name}`.trim() : ''
+        }))
+    }
+
+    const handleParkingSpaceChange = (spaceId: string) => {
+        setFormData(prev => ({
+            ...prev,
+            parking_space: Number(spaceId)
         }))
     }
 
@@ -82,14 +115,58 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
                     <Select
                         value={formData.parking_lot.toString()}
                         onValueChange={handleParkingLotChange}
+                        required
                     >
                         <SelectTrigger>
                             <SelectValue placeholder="Select a parking lot" />
                         </SelectTrigger>
                         <SelectContent>
-                            {parkingLots.map(lot => (
+                            {parkingLotsResponse?.results?.map((lot: ParkingLot) => (
                                 <SelectItem key={lot.id} value={lot.id.toString()}>
                                     {lot.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="parkingSpace">Parking Space</Label>
+                    <Select
+                        value={formData.parking_space.toString()}
+                        onValueChange={handleParkingSpaceChange}
+                        required
+                        disabled={!formData.parking_lot}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a parking space" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {parkingSpaces.map((spaceNumber) => (
+                                <SelectItem key={spaceNumber} value={spaceNumber.toString()}>
+                                    Space {spaceNumber}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="user">User</Label>
+                    <Select
+                        value={formData.user.toString()}
+                        onValueChange={handleUserChange}
+                        required
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a user" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {usersResponse?.results.map((user) => (
+                                <SelectItem key={user.id} value={user.id.toString()}>
+                                    {user.username}
                                 </SelectItem>
                             ))}
                         </SelectContent>

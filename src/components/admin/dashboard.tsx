@@ -7,6 +7,7 @@ import {
 import { Card } from '@/components/ui/card'
 import { Overview } from './sections/overview'
 import { ParkingLots } from './sections/parking-lots'
+import { ParkingSpaces } from './sections/parking-spaces'
 import { Reservations } from './sections/reservations'
 import { Users } from './sections/users'
 import { Reports } from './sections/reports'
@@ -21,6 +22,8 @@ const AdminDashboard: FC = () => {
                 return <Overview />
             case 'parking-lots':
                 return <ParkingLots />
+            case 'parking-spaces':
+                return <ParkingSpaces parkingLotId={0} />
             case 'reservations':
                 return <Reservations />
             case 'users':

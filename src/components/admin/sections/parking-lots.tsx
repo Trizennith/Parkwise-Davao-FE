@@ -11,7 +11,7 @@ import {
     DialogTitle
 } from '@/components/ui/dialog'
 import { CardTitle } from '@/components/ui/card'
-import { MapPin, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { parkingLotsService, ParkingLot, CreateParkingLotRequest } from '@/lib/apis/api.parking-lot'
 import { toast } from 'sonner'
@@ -45,8 +45,6 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { StatusSelections, ParkingLotStatus } from '../../admin/status-selections'
 import { Label } from '@/components/ui/label'
-
-const TEST_MODE = import.meta.env.VITE_TEST_MODE === 'true'
 
 export function ParkingLots() {
     const [isOpen, setIsOpen] = useState(false)
@@ -122,7 +120,8 @@ export function ParkingLots() {
             updateMutation.mutate({ id: selectedLot.id, data: newLot })
             // Then update the status if it has changed
             if (status !== selectedLot.status) {
-                parkingLotsService.updateStatus(selectedLot.id, status)
+                parkingLotsService
+                    .updateStatus(selectedLot.id, status)
                     .then(() => {
                         queryClient.invalidateQueries({ queryKey: ['parkingLots'] })
                         toast.success('Parking lot status updated successfully')
@@ -150,6 +149,11 @@ export function ParkingLots() {
     }
 
     const columns: ColumnDef<ParkingLot>[] = [
+        {
+            accessorKey: 'id',
+            header: 'ID',
+            cell: ({ row }) => <div className="font-medium">{row.original.id}</div>
+        },
         {
             accessorKey: 'name',
             header: 'Name'
@@ -294,10 +298,7 @@ export function ParkingLots() {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell
-                                    colSpan={columns.length}
-                                    className="h-24 text-center"
-                                >
+                                <TableCell colSpan={columns.length} className="h-24 text-center">
                                     No results.
                                 </TableCell>
                             </TableRow>
@@ -306,14 +307,17 @@ export function ParkingLots() {
                 </Table>
             </div>
 
-            <Dialog open={isOpen} onOpenChange={(open) => {
-                setIsOpen(open)
-                if (!open) {
-                    setSelectedLot(null)
-                    setStatus('active')
-                }
-            }}>
-                <DialogContent className="max-w-3xl">
+            <Dialog
+                open={isOpen}
+                onOpenChange={(open) => {
+                    setIsOpen(open)
+                    if (!open) {
+                        setSelectedLot(null)
+                        setStatus('active')
+                    }
+                }}
+            >
+                <DialogContent className="w-full  max-w-[1800px]">
                     <DialogHeader>
                         <DialogTitle>
                             {selectedLot ? 'Edit Parking Lot' : 'Add Parking Lot'}
@@ -323,27 +327,25 @@ export function ParkingLots() {
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="grid gap-4 py-4">
-                        <div className="space-y-2">
-                            <Label>Status</Label>
-                            <StatusSelections status={status} setStatus={setStatus} />
-                        </div>
-                        <Separator />
-                        <MapPicker
-                            onLocationClick={handleLocationSelect}
-                            selectedLot={selectedLot ? {
-                                name: selectedLot.name,
-                                latitude: selectedLot.latitude,
-                                longitude: selectedLot.longitude,
-                                address: selectedLot.address,
-                                total_spaces: selectedLot.total_spaces,
-                                available_spaces: selectedLot.available_spaces,
-                                hourly_rate: parseFloat(selectedLot.hourly_rate),
-                                status: selectedLot.status
-                            } : null}
-                        />
-                    </div>
-
+                    <MapPicker
+                        setStatus={setStatus}
+                        status={status}
+                        onLocationClick={handleLocationSelect}
+                        selectedLot={
+                            selectedLot
+                                ? {
+                                      name: selectedLot.name,
+                                      latitude: selectedLot.latitude,
+                                      longitude: selectedLot.longitude,
+                                      address: selectedLot.address,
+                                      total_spaces: selectedLot.total_spaces,
+                                      available_spaces: selectedLot.available_spaces,
+                                      hourly_rate: parseFloat(selectedLot.hourly_rate),
+                                      status: selectedLot.status
+                                  }
+                                : null
+                        }
+                    />
                     <DialogFooter>
                         <DialogClose asChild>
                             <Button variant="outline">Cancel</Button>

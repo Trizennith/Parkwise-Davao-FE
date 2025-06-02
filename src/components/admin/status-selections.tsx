@@ -16,7 +16,7 @@ interface StatusSelectionsProps {
 export function StatusSelections({ status, setStatus }: StatusSelectionsProps) {
     return (
         <Select value={status} onValueChange={(value: ParkingLotStatus) => setStatus(value)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
@@ -26,4 +26,4 @@ export function StatusSelections({ status, setStatus }: StatusSelectionsProps) {
             </SelectContent>
         </Select>
     )
-} 
+}

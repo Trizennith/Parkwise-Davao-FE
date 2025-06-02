@@ -9,16 +9,9 @@ import {
 } from '@/components/ui/dialog'
 import { Plus, Pencil, Trash2, MoreHorizontal } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { reservationsService, Reservation, CreateReservationRequest } from '@/lib/apis/api.reservations'
+import { reservationsService, Reservation, CreateReservationRequest, PaginatedResponse } from '@/lib/apis/api.reservations'
 import { toast } from 'sonner'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-} from '@/components/ui/table'
+import { DataTable } from '@/components/ui/data-table'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -27,15 +20,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import {
-    ColumnDef,
-    flexRender,
-    getCoreRowModel,
-    useReactTable,
-    getPaginationRowModel,
-    SortingState,
-    getSortedRowModel
-} from '@tanstack/react-table'
+import { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { ReservationForm } from './reservation-form'
@@ -45,11 +30,10 @@ const TEST_MODE = import.meta.env.VITE_TEST_MODE === 'true'
 export function Reservations() {
     const [isOpen, setIsOpen] = useState(false)
     const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
-    const [sorting, setSorting] = useState<SortingState>([])
     const queryClient = useQueryClient()
 
     // Fetch reservations
-    const { data: reservations = [], isLoading } = useQuery({
+    const { data: reservationsResponse, isLoading } = useQuery<PaginatedResponse<Reservation>>({
         queryKey: ['reservations'],
         queryFn: reservationsService.getAll
     })
@@ -118,9 +102,14 @@ export function Reservations() {
 
     const columns: ColumnDef<Reservation>[] = [
         {
-            accessorKey: 'parking_lot.name',
+            accessorKey: 'id',
+            header: 'ID',
+            cell: ({ row }) => <div className="font-medium">{row.original.id}</div>
+        },
+        {
+            accessorKey: 'parking_lot_name',
             header: 'Parking Lot',
-            cell: ({ row }) => <div className="font-medium">{row.original.parking_lot.name}</div>
+            cell: ({ row }) => <div className="font-medium">{row.original.parking_lot_name || '-'}</div>
         },
         {
             accessorKey: 'user.username',
@@ -214,17 +203,13 @@ export function Reservations() {
         }
     ]
 
-    const table = useReactTable({
-        data: reservations,
-        columns,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        onSortingChange: setSorting,
-        getSortedRowModel: getSortedRowModel(),
-        state: {
-            sorting
-        }
-    })
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-[400px]">
+                <div className="text-muted-foreground">Loading reservations...</div>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-6">
@@ -256,60 +241,12 @@ export function Reservations() {
                 </Button>
             </div>
 
-            {isLoading ? (
-                <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-            ) : (
-                <div className="rounded-md border">
-                    <Table>
-                        <TableHeader>
-                            {table.getHeaderGroups().map((headerGroup) => (
-                                <TableRow key={headerGroup.id}>
-                                    {headerGroup.headers.map((header) => (
-                                        <TableHead key={header.id}>
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                      header.column.columnDef.header,
-                                                      header.getContext()
-                                                  )}
-                                        </TableHead>
-                                    ))}
-                                </TableRow>
-                            ))}
-                        </TableHeader>
-                        <TableBody>
-                            {table.getRowModel().rows?.length ? (
-                                table.getRowModel().rows.map((row) => (
-                                    <TableRow
-                                        key={row.id}
-                                        data-state={row.getIsSelected() && 'selected'}
-                                    >
-                                        {row.getVisibleCells().map((cell) => (
-                                            <TableCell key={cell.id}>
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext()
-                                                )}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="h-24 text-center"
-                                    >
-                                        No results.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-            )}
+            <DataTable 
+                columns={columns} 
+                data={(reservationsResponse?.results as Reservation[]) ?? []} 
+                searchKey="vehicle_plate"
+                totalCount={reservationsResponse?.count ?? 0}
+            />
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent className="sm:max-w-[600px]">

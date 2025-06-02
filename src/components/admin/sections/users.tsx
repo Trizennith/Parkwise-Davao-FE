@@ -22,26 +22,33 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { API_ENDPOINTS } from '@/lib/apis/api.constants'
+import { PaginatedResponse } from '@/lib/apis/api.users'
 
 interface User {
     id: number
-    firstName: string
-    lastName: string
-    username: string
     email: string
-    role: 'User' | 'Admin'
-    status: 'Active' | 'Inactive'
-    lastLogin: string
-    createdAt: string
+    username: string
+    first_name: string
+    last_name: string
+    role: 'user' | 'admin'
+    status: 'active' | 'inactive'
+    avatar_url: string | null
+    created_at: string
+    updated_at: string
 }
 
 const columns: ColumnDef<User>[] = [
     {
-        accessorKey: 'firstName',
+        accessorKey: 'id',
+        header: 'ID',
+        cell: ({ row }) => <div className="font-medium">{row.original.id}</div>
+    },
+    {
+        accessorKey: 'first_name',
         header: 'First Name'
     },
     {
-        accessorKey: 'lastName',
+        accessorKey: 'last_name',
         header: 'Last Name'
     },
     {
@@ -56,7 +63,7 @@ const columns: ColumnDef<User>[] = [
         accessorKey: 'role',
         header: 'Role',
         cell: ({ row }) => (
-            <Badge variant={row.original.role === 'Admin' ? 'default' : 'secondary'}>
+            <Badge variant={row.original.role === 'admin' ? 'default' : 'secondary'}>
                 {row.original.role}
             </Badge>
         )
@@ -65,20 +72,20 @@ const columns: ColumnDef<User>[] = [
         accessorKey: 'status',
         header: 'Status',
         cell: ({ row }) => (
-            <Badge variant={row.original.status === 'Active' ? 'success' : 'destructive'}>
+            <Badge variant={row.original.status === 'active' ? 'success' : 'destructive'}>
                 {row.original.status}
             </Badge>
         )
     },
     {
-        accessorKey: 'lastLogin',
-        header: 'Last Login',
-        cell: ({ row }) => <span>{new Date(row.original.lastLogin).toLocaleString()}</span>
+        accessorKey: 'created_at',
+        header: 'Created At',
+        cell: ({ row }) => <span>{new Date(row.original.created_at).toLocaleString()}</span>
     },
     {
-        accessorKey: 'createdAt',
-        header: 'Created At',
-        cell: ({ row }) => <span>{new Date(row.original.createdAt).toLocaleString()}</span>
+        accessorKey: 'updated_at',
+        header: 'Updated At',
+        cell: ({ row }) => <span>{new Date(row.original.updated_at).toLocaleString()}</span>
     },
     {
         id: 'actions',
@@ -135,10 +142,10 @@ const columns: ColumnDef<User>[] = [
 export const Users: FC = () => {
     const queryClient = useQueryClient()
 
-    const { data: users, isLoading } = useQuery<User[]>({
+    const { data: usersResponse, isLoading } = useQuery<PaginatedResponse<User>>({
         queryKey: ['users'],
-        queryFn: async (): Promise<User[]> => {
-            const response = await api.get<User[]>(API_ENDPOINTS.ADMIN.USERS)
+        queryFn: async (): Promise<PaginatedResponse<User>> => {
+            const response = await api.get<PaginatedResponse<User>>(API_ENDPOINTS.ADMIN.USERS)
             return response.data
         }
     })
@@ -176,7 +183,12 @@ export const Users: FC = () => {
                 </div>
                 <AddUserDialog />
             </div>
-            <DataTable columns={columns} data={users ?? []} searchKey="username" />
+            <DataTable 
+                columns={columns} 
+                data={usersResponse?.results ?? []} 
+                searchKey="username"
+                totalCount={usersResponse?.count ?? 0}
+            />
         </div>
     )
 }

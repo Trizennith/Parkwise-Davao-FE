@@ -10,7 +10,7 @@ import { useTheme } from '@/components/theme-provider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { LeafletMouseEvent } from 'leaflet'
 import { ParkingLot } from '@/lib/apis/api.parking-lot'
-import { ParkingLotStatus } from './status-selections'
+import { ParkingLotStatus, StatusSelections } from './status-selections'
 
 // Fix for default marker icon
 const icon = new Icon({
@@ -130,6 +130,8 @@ export type OnLocationClickType = {
 }
 
 interface MapPickerPropsType {
+    status: ParkingLotStatus
+    setStatus: (status: ParkingLotStatus) => void
     onLocationClick: (location: OnLocationClickType) => void
     selectedLot?: {
         name: string
@@ -143,16 +145,17 @@ interface MapPickerPropsType {
     } | null
 }
 
-export function MapPicker({
-    onLocationClick,
-    selectedLot
-}: MapPickerPropsType) {
-    const [position, setPosition] = useState<[number, number] | null>(selectedLot ? [parseFloat(selectedLot.latitude), parseFloat(selectedLot.longitude)] : null)
+export function MapPicker({ onLocationClick, selectedLot, setStatus, status }: MapPickerPropsType) {
+    const [position, setPosition] = useState<[number, number] | null>(
+        selectedLot ? [parseFloat(selectedLot.latitude), parseFloat(selectedLot.longitude)] : null
+    )
     const [locationName, setLocationName] = useState(selectedLot?.name || '')
     const [address, setAddress] = useState(selectedLot?.address || '')
     const [isLoadingAddress, setIsLoadingAddress] = useState(false)
     const [totalSpaces, setTotalSpaces] = useState<number>(selectedLot?.total_spaces || 0)
-    const [availableSpaces, setAvailableSpaces] = useState<number>(selectedLot?.available_spaces || 0)
+    const [availableSpaces, setAvailableSpaces] = useState<number>(
+        selectedLot?.available_spaces || 0
+    )
     const [hourlyRate, setHourlyRate] = useState<number>(selectedLot?.hourly_rate || 0)
     const { theme } = useTheme()
 
@@ -194,7 +197,7 @@ export function MapPicker({
             // Format coordinates to have no more than 9 digits total
             const lat = position[0].toFixed(6)
             const lng = position[1].toFixed(6)
-            
+
             onLocationClick({
                 name: locationName,
                 lat: parseFloat(lat),
@@ -208,8 +211,27 @@ export function MapPicker({
     }
 
     return (
-        <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+        <div className="relative w-full flex md:flex-row flex-col gap-4 md:min-h-[600px] min-h-full overflow-y-scroll">
+            <div className="flex-2 w-full rounded-md border overflow-hidden min-h-[200px]">
+                <MapContainer
+                    center={position || [7.1907, 125.4553]} // Davao City coordinates
+                    zoom={13}
+                    style={{ height: '100%', width: '100%' }}
+                >
+                    <TileLayer
+                        url={
+                            theme === 'dark'
+                                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                                : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                        }
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    />
+                    {position && <Marker position={position} icon={icon} />}
+                    <MapEvents onMapClick={handleMapClick} />
+                    <MapControls />
+                </MapContainer>
+            </div>
+            <div className="flex-1 flex flex-col gap-2">
                 <div className="space-y-2">
                     <Label htmlFor="locationName">Location Name</Label>
                     <Input
@@ -229,9 +251,7 @@ export function MapPicker({
                         disabled={isLoadingAddress}
                     />
                 </div>
-            </div>
 
-            <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="totalSpaces">Total Spaces</Label>
                     <Input
@@ -264,46 +284,21 @@ export function MapPicker({
                         min="0"
                     />
                 </div>
-            </div>
-
-            <div className="h-[400px] w-full rounded-md border">
-                <MapContainer
-                    center={position || [7.1907, 125.4553]} // Davao City coordinates
-                    zoom={13}
-                    style={{ height: '100%', width: '100%' }}
-                >
-                    <TileLayer
-                        url={
-                            theme === 'dark'
-                                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                                : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-                        }
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    />
-                    {position && (
-                        <Marker
-                            position={position}
-                            icon={icon}
-                        />
-                    )}
-                    <MapEvents onMapClick={handleMapClick} />
-                    <MapControls />
-                </MapContainer>
-            </div>
-
-            {position && (
-                <div className="text-sm text-muted-foreground">
-                    Selected coordinates: {position[0].toFixed(6)}, {position[1].toFixed(6)}
+                <div className="space-y-2">
+                    <Label>Status</Label>
+                    <StatusSelections status={status} setStatus={setStatus} />
                 </div>
-            )}
+                {position && (
+                    <div className="text-sm text-muted-foreground">
+                        Selected coordinates: {position[0].toFixed(6)}, {position[1].toFixed(6)}
+                    </div>
+                )}
 
-            <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setPosition(null)}>
-                    Cancel
-                </Button>
-                <Button onClick={handleSubmit} disabled={!position || !locationName}>
-                    {selectedLot ? 'Update Location' : 'Add Location'}
-                </Button>
+                <div className="flex justify-end gap-2">
+                    <Button className='w-full' onClick={handleSubmit} disabled={!position || !locationName}>
+                        {selectedLot ? 'Update Location' : 'Add Location'}
+                    </Button>
+                </div>
             </div>
         </div>
     )

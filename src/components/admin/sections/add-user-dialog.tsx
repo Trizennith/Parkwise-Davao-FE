@@ -35,8 +35,8 @@ import { toast } from 'sonner'
 import { API_ENDPOINTS } from '@/lib/apis/api.constants'
 
 const formSchema = z.object({
-    firstName: z.string().min(2, 'First name must be at least 2 characters'),
-    lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+    first_name: z.string().min(2, 'First name must be at least 2 characters'),
+    last_name: z.string().min(2, 'Last name must be at least 2 characters'),
     username: z.string()
         .min(3, 'Username must be at least 3 characters')
         .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
@@ -48,8 +48,8 @@ const formSchema = z.object({
         .regex(/[0-9]/, 'Password must contain at least one number')
         .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
     confirmPassword: z.string(),
-    role: z.enum(['User', 'Admin']),
-    status: z.enum(['Active', 'Inactive']),
+    role: z.enum(['user', 'admin']),
+    status: z.enum(['active', 'inactive']),
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
@@ -69,14 +69,14 @@ export const AddUserDialog: FC<AddUserDialogProps> = ({ trigger }) => {
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            firstName: '',
-            lastName: '',
+            first_name: '',
+            last_name: '',
             username: '',
             email: '',
             password: '',
             confirmPassword: '',
-            role: 'User',
-            status: 'Active',
+            role: 'user',
+            status: 'active',
         },
     })
 
@@ -122,7 +122,7 @@ export const AddUserDialog: FC<AddUserDialogProps> = ({ trigger }) => {
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
-                                name="firstName"
+                                name="first_name"
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>First Name</FormLabel>
@@ -135,7 +135,7 @@ export const AddUserDialog: FC<AddUserDialogProps> = ({ trigger }) => {
                             />
                             <FormField
                                 control={form.control}
-                                name="lastName"
+                                name="last_name"
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Last Name</FormLabel>
@@ -253,8 +253,8 @@ export const AddUserDialog: FC<AddUserDialogProps> = ({ trigger }) => {
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="User">User</SelectItem>
-                                            <SelectItem value="Admin">Admin</SelectItem>
+                                            <SelectItem value="user">User</SelectItem>
+                                            <SelectItem value="admin">Admin</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -277,8 +277,8 @@ export const AddUserDialog: FC<AddUserDialogProps> = ({ trigger }) => {
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="Active">Active</SelectItem>
-                                            <SelectItem value="Inactive">Inactive</SelectItem>
+                                            <SelectItem value="active">Active</SelectItem>
+                                            <SelectItem value="inactive">Inactive</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />

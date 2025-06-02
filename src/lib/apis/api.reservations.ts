@@ -3,41 +3,54 @@ import { api } from './api.base'
 
 export interface Reservation {
     id: number
-    parking_lot: {
-        id: number
-        name: string
-    }
+    parking_lot: number
+    parking_lot_name: string
     parking_space: {
         id: number
+        parking_lot: number
         space_number: string
+        status: string
     }
     user: {
         id: number
-        username: string
         email: string
+        username: string
     }
+    user_name: string
     vehicle_plate: string
+    notes: string
     start_time: string
     end_time: string
     status: 'active' | 'completed' | 'cancelled'
-    notes?: string
+    duration: number
     total_cost: string
     created_at: string
+    updated_at: string
 }
 
 export interface CreateReservationRequest {
     parking_lot: number
+    parking_lot_name: string
     parking_space: number
-    start_time: string
-    end_time: string
+    user: number
+    user_name: string
     vehicle_plate: string
     notes?: string
+    start_time: string
+    end_time: string
+}
+
+export interface PaginatedResponse<T> {
+    count: number
+    next: string | null
+    previous: string | null
+    results: T[]
 }
 
 export const reservationsService = {
     // Get all reservations (admin only)
-    getAll: async (): Promise<Reservation[]> => {
-        const { data } = await api.get<Reservation[]>(`${BASE_API_URL}${API_ENDPOINTS.ADMIN.RESERVATIONS}`)
+    getAll: async (): Promise<PaginatedResponse<Reservation>> => {
+        const { data } = await api.get<PaginatedResponse<Reservation>>(`${BASE_API_URL}${API_ENDPOINTS.ADMIN.RESERVATIONS}`)
         return data
     },
 
@@ -76,8 +89,8 @@ export const reservationsService = {
     },
 
     // Get user's reservations (user only)
-    getUserReservations: async (): Promise<Reservation[]> => {
-        const { data } = await api.get<Reservation[]>(`${BASE_API_URL}${API_ENDPOINTS.USER.RESERVATIONS}`)
+    getUserReservations: async (): Promise<PaginatedResponse<Reservation>> => {
+        const { data } = await api.get<PaginatedResponse<Reservation>>(`${BASE_API_URL}${API_ENDPOINTS.USER.RESERVATIONS}`)
         return data
     },
 

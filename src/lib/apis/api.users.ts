@@ -2,20 +2,29 @@ import { API_ENDPOINTS, BASE_API_URL } from '@/lib/apis/api.constants'
 import { api } from './api.base'
 
 export interface User {
-    id: string
-    firstName: string
-    lastName: string
-    username: string
+    id: number
     email: string
+    username: string
+    first_name: string
+    last_name: string
     role: 'user' | 'admin'
     status: 'active' | 'inactive'
+    avatar_url: string | null
+    created_at: string
+    updated_at: string
 }
 
+export interface PaginatedResponse<T> {
+    count: number
+    next: string | null
+    previous: string | null
+    results: T[]
+}
 
 export const usersService = {
     // Get all users (admin only)
-    getAll: async (): Promise<User[]> => {
-        const { data } = await api.get<User[]>(`${BASE_API_URL}${API_ENDPOINTS.ADMIN.USERS}`)
+    getAll: async (): Promise<PaginatedResponse<User>> => {
+        const { data } = await api.get<PaginatedResponse<User>>(`${BASE_API_URL}${API_ENDPOINTS.ADMIN.USERS}`)
         return data
     },
 

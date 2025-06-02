@@ -163,6 +163,13 @@ const mockMonthlyReport: MonthlyReportResponse = {
     updated_at: new Date().toISOString()
 }
 
+// Mock user demographics data
+const mockUserDemographics = [
+    { name: 'Regular Users', value: 65 },
+    { name: 'Premium Users', value: 25 },
+    { name: 'Staff', value: 10 }
+]
+
 // Create mutable copies of the mock data
 const users = [...mockUsers]
 const parkingLots = [...mockParkingLots]
@@ -351,5 +358,15 @@ export const handlers = [
         }
 
         return corsResponse(HttpResponse.json(mockMonthlyReport))
+    }),
+
+    // User demographics endpoint
+    http.get(API_ENDPOINTS.ADMIN.REPORTS.DAILY, ({ request }) => {
+        const token = request.headers.get('Authorization')?.replace('Bearer ', '')
+        if (!token) {
+            return corsResponse(new HttpResponse(null, { status: 401 }))
+        }
+
+        return corsResponse(HttpResponse.json(mockUserDemographics))
     })
 ]

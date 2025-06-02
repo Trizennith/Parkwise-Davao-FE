@@ -1,7 +1,7 @@
-import { FC } from 'react'
+import { FC, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar, Download, BarChart2, TrendingUp, Car, Clock } from 'lucide-react'
+import { Download, BarChart2, TrendingUp, Car, Clock } from 'lucide-react'
 import {
     AreaChart,
     Area,
@@ -12,52 +12,61 @@ import {
     ResponsiveContainer,
     BarChart,
     Bar,
-    PieChart,
-    Pie,
-    Cell,
     LineChart,
     Line
 } from 'recharts'
 import { useQuery } from '@tanstack/react-query'
 import { reportsService } from '@/lib/apis/api.reports'
-import { format } from 'date-fns'
+import { format, subDays } from 'date-fns'
 import { toast } from 'sonner'
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28']
+import { DateRangePicker } from '@/components/ui/date-range-picker'
 
 export const Reports: FC = () => {
+    // Set default date range to last 30 days
+    const [dateRange, setDateRange] = useState({
+        from: subDays(new Date(), 30),
+        to: new Date()
+    })
+
     // Fetch all report data
     const { data: summary, isLoading: isLoadingSummary } = useQuery({
-        queryKey: ['reports', 'summary'],
-        queryFn: reportsService.getSummary
+        queryKey: ['reports', 'summary', dateRange],
+        queryFn: () =>
+            reportsService.getSummary({
+                start_date: format(dateRange.from, 'yyyy-MM-dd'),
+                end_date: format(dateRange.to, 'yyyy-MM-dd')
+            })
     })
 
     const { data: dailyReservations, isLoading: isLoadingReservations } = useQuery({
-        queryKey: ['reports', 'daily-reservations'],
-        queryFn: reportsService.getDailyReservations
+        queryKey: ['reports', 'daily-reservations', dateRange],
+        queryFn: () =>
+            reportsService.getDailyReservations({
+                start_date: format(dateRange.from, 'yyyy-MM-dd'),
+                end_date: format(dateRange.to, 'yyyy-MM-dd')
+            })
     })
 
     const { data: revenueData, isLoading: isLoadingRevenue } = useQuery({
-        queryKey: ['reports', 'revenue'],
-        queryFn: reportsService.getRevenueData
+        queryKey: ['reports', 'revenue', dateRange],
+        queryFn: () =>
+            reportsService.getRevenueData({
+                start_date: format(dateRange.from, 'yyyy-MM-dd'),
+                end_date: format(dateRange.to, 'yyyy-MM-dd')
+            })
     })
 
     const { data: peakHoursData, isLoading: isLoadingPeakHours } = useQuery({
-        queryKey: ['reports', 'peak-hours'],
-        queryFn: reportsService.getPeakHours
-    })
-
-    const { data: userDemographics, isLoading: isLoadingDemographics } = useQuery({
-        queryKey: ['reports', 'user-demographics'],
-        queryFn: reportsService.getUserDemographics
+        queryKey: ['reports', 'peak-hours', dateRange],
+        queryFn: () =>
+            reportsService.getPeakHours({
+                start_date: format(dateRange.from, 'yyyy-MM-dd'),
+                end_date: format(dateRange.to, 'yyyy-MM-dd')
+            })
     })
 
     const isLoading =
-        isLoadingSummary ||
-        isLoadingReservations ||
-        isLoadingRevenue ||
-        isLoadingPeakHours ||
-        isLoadingDemographics
+        isLoadingSummary || isLoadingReservations || isLoadingRevenue || isLoadingPeakHours
 
     if (isLoading) {
         return (
@@ -72,20 +81,12 @@ export const Reports: FC = () => {
         toast.info('Export functionality coming soon!')
     }
 
-    const handleDateRange = () => {
-        // TODO: Implement date range picker
-        toast.info('Date range picker coming soon!')
-    }
-
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Reports & Analytics</h3>
                 <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleDateRange}>
-                        <Calendar className="mr-2 h-4 w-4" />
-                        Date Range
-                    </Button>
+                    <DateRangePicker value={dateRange} onChange={setDateRange} />
                     <Button variant="outline" onClick={handleExport}>
                         <Download className="mr-2 h-4 w-4" />
                         Export
@@ -100,11 +101,11 @@ export const Reports: FC = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            ₱{summary?.totalRevenue?.toLocaleString() ?? '0'}
+                            ₱{summary?.total_reservations?.toLocaleString() ?? '0'}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {summary?.revenueChange
-                                ? (summary.revenueChange > 0 ? '+' : '') + summary.revenueChange
+                            {summary?.revenue_change
+                                ? (summary.revenue_change > 0 ? '+' : '') + summary.revenue_change
                                 : '0'}
                             % from last month
                         </p>
@@ -117,12 +118,12 @@ export const Reports: FC = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {summary?.dailyReservations ?? '0'}
+                            {summary?.daily_reservations ?? '0'}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {summary?.reservationChange
-                                ? (summary.reservationChange > 0 ? '+' : '') +
-                                  summary.reservationChange
+                            {summary?.reservation_change
+                                ? (summary.reservation_change > 0 ? '+' : '') +
+                                  summary.reservation_change
                                 : '0'}
                             % from last week
                         </p>
@@ -135,12 +136,12 @@ export const Reports: FC = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {summary?.parkingUtilization ?? '0'}%
+                            {summary?.parking_utilization ?? '0'}%
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {summary?.utilizationChange
-                                ? (summary.utilizationChange > 0 ? '+' : '') +
-                                  summary.utilizationChange
+                            {summary?.utilization_change
+                                ? (summary.utilization_change > 0 ? '+' : '') +
+                                  summary.utilization_change
                                 : '0'}
                             % from last month
                         </p>
@@ -152,10 +153,12 @@ export const Reports: FC = () => {
                         <Clock className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{summary?.averageDuration ?? '0'}h</div>
+                        <div className="text-2xl font-bold">
+                            {summary?.average_duration ?? '0'}h
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                            {summary?.durationChange
-                                ? (summary.durationChange > 0 ? '+' : '') + summary.durationChange
+                            {summary?.duration_change
+                                ? (summary.duration_change > 0 ? '+' : '') + summary.duration_change
                                 : '0'}
                             h from last month
                         </p>
@@ -250,39 +253,6 @@ export const Reports: FC = () => {
                                     <Tooltip formatter={(value) => [`${value}%`, 'Usage']} />
                                     <Bar dataKey="usage" fill="#8884d8" />
                                 </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>User Demographics</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={userDemographics}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        outerRadius={80}
-                                        fill="#8884d8"
-                                        dataKey="value"
-                                        label={({ name, percent }) =>
-                                            `${name} ${(percent * 100).toFixed(0)}%`
-                                        }
-                                    >
-                                        {userDemographics?.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={COLORS[index % COLORS.length]}
-                                            />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip formatter={(value) => [`${value}%`, 'Users']} />
-                                </PieChart>
                             </ResponsiveContainer>
                         </div>
                     </CardContent>

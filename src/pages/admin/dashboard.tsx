@@ -17,6 +17,7 @@ import {
 import { useAdminAuth } from '@/context/admin/auth'
 import { SquareTerminal } from 'lucide-react'
 import ErrorBoundary from '@/components/common/ErrorBoundary'
+import { ParkingSpaces } from '@/components/admin/sections/parking-spaces'
 
 const nav = [
     {
@@ -36,6 +37,10 @@ const nav = [
                 title: 'Reservations',
                 section: 'reservations'
             },
+            // {
+            //     title: 'Parking Spaces',
+            //     section: 'parking-spaces'
+            // },
             {
                 title: 'Users',
                 section: 'users'
@@ -61,6 +66,8 @@ export default function AdminDashboard() {
                 return <ParkingLots />
             case 'reservations':
                 return <Reservations />
+            // case 'parking-spaces':
+            //     return <ParkingSpaces parkingLotId={0} />
             case 'users':
                 return <Users />
             case 'reports':

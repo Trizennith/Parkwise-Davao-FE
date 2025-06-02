@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 export type AdminDashboardSection =
     | 'overview'
     | 'parking-lots'
+    | 'parking-spaces'
     | 'reservations'
     | 'users'
     | 'reports'
@@ -89,6 +90,7 @@ const useAdminDashboard = (): AdminDashboardContextType => {
 const sectionTitles: Record<AdminDashboardSection, string> = {
     overview: 'Dashboard Overview',
     'parking-lots': 'Parking Lots Management',
+    'parking-spaces': 'Parking Spaces Management',
     reservations: 'Reservations Management',
     users: 'User Management',
     reports: 'Reports & Analytics',
@@ -98,6 +100,7 @@ const sectionTitles: Record<AdminDashboardSection, string> = {
 const sectionDescriptions: Record<AdminDashboardSection, string> = {
     overview: 'View your dashboard overview and quick actions',
     'parking-lots': 'Manage parking locations and slots',
+    'parking-spaces': 'Manage individual parking spaces and their status',
     reservations: 'View and manage all parking reservations',
     users: 'Manage user accounts and permissions',
     reports: 'View system reports and analytics',
