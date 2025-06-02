@@ -24,6 +24,7 @@ import { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { ReservationForm } from './reservation-form'
+import { parkingLotsService } from '@/lib/apis/api.parking-lot'
 
 const TEST_MODE = import.meta.env.VITE_TEST_MODE === 'true'
 
@@ -41,8 +42,11 @@ export function Reservations() {
     // Create mutation
     const createMutation = useMutation({
         mutationFn: reservationsService.create,
-        onSuccess: () => {
+        onSuccess: (data) => {
+            // Invalidate both reservations and parking lots queries
             queryClient.invalidateQueries({ queryKey: ['reservations'] })
+            queryClient.invalidateQueries({ queryKey: ['parkingLots'] })
+            queryClient.invalidateQueries({ queryKey: ['availableSpaces', data.parking_lot] })
             setIsOpen(false)
             toast.success('Reservation created successfully')
         },
@@ -56,8 +60,11 @@ export function Reservations() {
     const updateMutation = useMutation({
         mutationFn: ({ id, data }: { id: number; data: CreateReservationRequest }) =>
             reservationsService.update(id, data),
-        onSuccess: () => {
+        onSuccess: (data) => {
+            // Invalidate both reservations and parking lots queries
             queryClient.invalidateQueries({ queryKey: ['reservations'] })
+            queryClient.invalidateQueries({ queryKey: ['parkingLots'] })
+            queryClient.invalidateQueries({ queryKey: ['availableSpaces', data.parking_lot] })
             setIsOpen(false)
             setSelectedReservation(null)
             toast.success('Reservation updated successfully')
@@ -70,9 +77,18 @@ export function Reservations() {
 
     // Delete mutation
     const deleteMutation = useMutation({
-        mutationFn: reservationsService.delete,
-        onSuccess: () => {
+        mutationFn: async (id: number) => {
+            // Get the reservation details before deleting
+            const reservation = await reservationsService.getById(id)
+            // Delete the reservation
+            await reservationsService.delete(id)
+            return reservation
+        },
+        onSuccess: (deletedReservation) => {
+            // Invalidate both reservations and parking lots queries
             queryClient.invalidateQueries({ queryKey: ['reservations'] })
+            queryClient.invalidateQueries({ queryKey: ['parkingLots'] })
+            queryClient.invalidateQueries({ queryKey: ['availableSpaces', deletedReservation.parking_lot] })
             toast.success('Reservation deleted successfully')
         },
         onError: (error) => {

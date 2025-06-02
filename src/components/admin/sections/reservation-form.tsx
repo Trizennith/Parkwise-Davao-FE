@@ -12,7 +12,7 @@ import {
 import { Reservation, CreateReservationRequest } from '@/lib/apis/api.reservations'
 import { User } from '@/lib/apis/api.users'
 import { useQuery } from '@tanstack/react-query'
-import { parkingLotsService, ParkingLot } from '@/lib/apis/api.parking-lot'
+import { parkingLotsService, ParkingLot, ParkingSpace } from '@/lib/apis/api.parking-lot'
 import { usersService } from '@/lib/apis/api.users'
 import { api } from '@/lib/apis/api.base'
 import { BASE_API_URL, API_ENDPOINTS } from '@/lib/apis/api.constants'
@@ -48,13 +48,17 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
         }
     })
 
+    // Fetch available spaces for the selected parking lot
+    const { data: availableSpaces } = useQuery({
+        queryKey: ['availableSpaces', formData.parking_lot],
+        queryFn: () => parkingLotsService.getAvailableSpaces(formData.parking_lot),
+        enabled: formData.parking_lot > 0
+    })
+
     const { data: usersResponse } = useQuery({
         queryKey: ['users'],
         queryFn: usersService.getAll
     })
-
-    // Generate array of numbers from 1 to 10 for parking spaces
-    const parkingSpaces = Array.from({ length: 10 }, (_, i) => i + 1)
 
     useEffect(() => {
         if (initialValues) {
@@ -123,7 +127,7 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
                         <SelectContent>
                             {parkingLotsResponse?.results?.map((lot: ParkingLot) => (
                                 <SelectItem key={lot.id} value={lot.id.toString()}>
-                                    {lot.name}
+                                    {lot.name} ({lot.available_spaces} spaces available)
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -142,9 +146,9 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
                             <SelectValue placeholder="Select a parking space" />
                         </SelectTrigger>
                         <SelectContent>
-                            {parkingSpaces.map((spaceNumber) => (
-                                <SelectItem key={spaceNumber} value={spaceNumber.toString()}>
-                                    Space {spaceNumber}
+                            {availableSpaces?.map((space: ParkingSpace) => (
+                                <SelectItem key={space.id} value={space.id.toString()}>
+                                    Space {space.space_number}
                                 </SelectItem>
                             ))}
                         </SelectContent>

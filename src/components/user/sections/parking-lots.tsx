@@ -20,6 +20,16 @@ import { useTheme } from '@/components/theme-provider'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { useApiQuery, useApiMutation } from '@/hooks/use-api-query'
+import { format } from 'date-fns'
+import { API_ENDPOINTS, BASE_API_URL } from '@/lib/apis/api.constants'
+import { api } from '@/lib/apis/api.base'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 // Fix for default marker icon
 const icon = new Icon({
@@ -75,36 +85,78 @@ interface PaginatedResponse<T> {
     results: T[]
 }
 
+interface ParkingSpace {
+    id: number
+    space_number: string
+    type: string
+    status: string
+}
+
 export default function ParkingLots() {
     const [selectedLot, setSelectedLot] = useState<ParkingLot | null>(null)
     const [showMap, setShowMap] = useState(false)
     const [showReservation, setShowReservation] = useState(false)
     const [vehiclePlate, setVehiclePlate] = useState('')
     const [notes, setNotes] = useState('')
+    const [startTime, setStartTime] = useState('')
+    const [endTime, setEndTime] = useState('')
+    const [selectedSpace, setSelectedSpace] = useState<string>('')
     const queryClient = useQueryClient()
 
-    // Fetch parking lots using the new hook
+    // Fetch parking lots using the correct endpoint
     const { data: parkingLotsResponse, isLoading } = useApiQuery<PaginatedResponse<ParkingLot>>(
         ['parking-lots'],
-        '/api/parking-lots'
+        `${BASE_API_URL}${API_ENDPOINTS.USER.PARKING_LOTS}`
+    )
+
+    // Fetch available spaces when a parking lot is selected
+    const { data: availableSpaces } = useApiQuery<ParkingSpace[]>(
+        ['availableSpaces', selectedLot?.id?.toString() ?? ''],
+        selectedLot ? `${BASE_API_URL}/api/user/parking-lots/${selectedLot.id}/available-spaces/` : '',
+        {
+            enabled: !!selectedLot
+        }
     )
 
     const parkingLots = parkingLotsResponse?.results || []
 
-    // Create reservation using the new hook
-    const createReservation = useApiMutation<Reservation, { lotId: number; vehiclePlate: string; notes: string }>(
-        '/api/reservations',
+    // Create reservation using the correct endpoint
+    const createReservation = useApiMutation<Reservation, {
+        parking_lot: number
+        parking_space: number
+        vehicle_plate: string
+        notes: string
+        start_time: string
+        end_time: string
+    }>(
+        `${BASE_API_URL}${API_ENDPOINTS.USER.RESERVATIONS}`,
         'post',
         {
-            onSuccess: () => {
+            onSuccess: (data) => {
+                // Invalidate both parking lots and reservations queries
+                queryClient.invalidateQueries({ queryKey: ['parking-lots'] })
                 queryClient.invalidateQueries({ queryKey: ['reservations'] })
+                queryClient.invalidateQueries({ queryKey: ['availableSpaces', data.parking_lot.id] })
+                
                 toast.success('Parking space reserved successfully!')
                 setShowReservation(false)
-                setVehiclePlate('')
-                setNotes('')
+                resetForm()
+            },
+            onError: (error: unknown) => {
+                const errorMessage = error instanceof Error ? error.message : 'Failed to create reservation'
+                toast.error(errorMessage)
             }
         }
     )
+
+    const resetForm = () => {
+        setVehiclePlate('')
+        setNotes('')
+        setStartTime('')
+        setEndTime('')
+        setSelectedLot(null)
+        setSelectedSpace('')
+    }
 
     if (isLoading) {
         return (
@@ -118,12 +170,39 @@ export default function ParkingLots() {
     }
 
     const handleReserve = () => {
-        if (!selectedLot || !vehiclePlate) return
+        if (!selectedLot || !vehiclePlate || !startTime || !endTime || !selectedSpace) {
+            toast.error('Please fill in all required fields')
+            return
+        }
+
+        // Validate time range
+        const start = new Date(startTime)
+        const end = new Date(endTime)
+        const now = new Date()
+
+        if (start < now) {
+            toast.error('Start time cannot be in the past')
+            return
+        }
+
+        if (end <= start) {
+            toast.error('End time must be after start time')
+            return
+        }
+
+        const parkingSpaceId = parseInt(selectedSpace)
+        if (isNaN(parkingSpaceId)) {
+            toast.error('Invalid parking space selected')
+            return
+        }
 
         createReservation.mutate({
-            lotId: selectedLot.id,
-            vehiclePlate,
-            notes
+            parking_lot: selectedLot.id,
+            parking_space: parkingSpaceId,
+            vehicle_plate: vehiclePlate,
+            notes,
+            start_time: start.toISOString(),
+            end_time: end.toISOString()
         })
     }
 
@@ -164,7 +243,7 @@ export default function ParkingLots() {
                                 <div className="flex justify-between">
                                     <span>Hourly Rate:</span>
                                     <span className="text-sm text-muted-foreground">
-                                        ${parseFloat(lot.hourly_rate).toFixed(2)}/hour
+                                        ₱{parseFloat(lot.hourly_rate).toFixed(2)}/hour
                                     </span>
                                 </div>
                                 <div className="flex flex-col gap-2 pt-4">
@@ -241,7 +320,49 @@ export default function ParkingLots() {
                                 value={vehiclePlate}
                                 onChange={(e) => setVehiclePlate(e.target.value)}
                                 placeholder="Enter your vehicle plate number"
+                                required
                             />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="parkingSpace">Parking Space</Label>
+                            <Select
+                                value={selectedSpace}
+                                onValueChange={setSelectedSpace}
+                                disabled={!selectedLot}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a parking space" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableSpaces?.map((space) => (
+                                        <SelectItem key={space.id} value={space.id.toString()}>
+                                            {space.space_number} ({space.type})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="startTime">Start Time</Label>
+                                <Input
+                                    id="startTime"
+                                    type="datetime-local"
+                                    value={startTime}
+                                    onChange={(e) => setStartTime(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="endTime">End Time</Label>
+                                <Input
+                                    id="endTime"
+                                    type="datetime-local"
+                                    value={endTime}
+                                    onChange={(e) => setEndTime(e.target.value)}
+                                    required
+                                />
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="notes">Additional Notes (Optional)</Label>
@@ -257,17 +378,21 @@ export default function ParkingLots() {
                             <div className="text-sm text-muted-foreground">
                                 <p>Address: {selectedLot?.address}</p>
                                 <p>Coordinates: {parseFloat(selectedLot?.latitude || '0').toFixed(6)}, {parseFloat(selectedLot?.longitude || '0').toFixed(6)}</p>
-                                <p>Hourly Rate: ${parseFloat(selectedLot?.hourly_rate || '0').toFixed(2)}/hour</p>
+                                <p>Hourly Rate: ₱{parseFloat(selectedLot?.hourly_rate || '0').toFixed(2)}/hour</p>
+                                <p>Available Spaces: {selectedLot?.available_spaces}</p>
                             </div>
                         </div>
                     </div>
                     <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowReservation(false)}>
+                        <Button variant="outline" onClick={() => {
+                            setShowReservation(false)
+                            resetForm()
+                        }}>
                             Cancel
                         </Button>
                         <Button
                             onClick={handleReserve}
-                            disabled={!vehiclePlate || createReservation.isPending}
+                            disabled={!vehiclePlate || !startTime || !endTime || !selectedSpace || createReservation.isPending}
                         >
                             {createReservation.isPending ? (
                                 <>
