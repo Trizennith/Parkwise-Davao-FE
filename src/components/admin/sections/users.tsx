@@ -6,7 +6,7 @@ import { Plus, Trash2, Pencil } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
-import { api } from '@/lib/api'
+import { api } from '@/lib/apis/api.base'
 import { AddUserDialog } from './add-user-dialog'
 import { EditUserDialog } from './edit-user-dialog'
 import {
@@ -21,6 +21,7 @@ import {
     AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
+import { API_ENDPOINTS } from '@/lib/apis/api.constants'
 
 interface User {
     id: number
@@ -86,7 +87,7 @@ const columns: ColumnDef<User>[] = [
 
             const deleteUser = useMutation({
                 mutationFn: async (id: number) => {
-                    const response = await api.delete(`/api/users/${id}`)
+                    const response = await api.delete(API_ENDPOINTS.ADMIN.USER_DETAILS(id))
                     return response.data
                 },
                 onSuccess: () => {
@@ -137,14 +138,14 @@ export const Users: FC = () => {
     const { data: users, isLoading } = useQuery<User[]>({
         queryKey: ['users'],
         queryFn: async (): Promise<User[]> => {
-            const response = await api.get<User[]>('/api/users')
+            const response = await api.get<User[]>(API_ENDPOINTS.ADMIN.USERS)
             return response.data
         }
     })
 
     const deleteUser = useMutation({
         mutationFn: async (id: number) => {
-            const response = await api.delete<User>(`/api/users/${id}`)
+            const response = await api.delete<User>(API_ENDPOINTS.ADMIN.USER_DETAILS(id))
             return response.data
         },
         onSuccess: () => {

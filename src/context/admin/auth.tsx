@@ -1,20 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { api } from '@/lib/api'
+import { api } from '@/lib/apis/api.base'
+import {User as AdminUser, API_ENDPOINTS, LoginResponse} from '@/lib/apis/api.constants'
 
-export interface AdminUser {
-    id: number
-    username: string
-    email: string
-    userType: 'super_admin' | 'moderator'
-    avatarUrl?: string
-}
-
-interface AdminAuthResponse {
-    admin: AdminUser
-    token: string
-}
 
 interface AdminAuthContextType {
     admin: AdminUser | null
@@ -39,12 +28,13 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
                     // Set the token in the API headers
                     api.defaults.headers.common['Authorization'] = `Bearer ${token}`
 
-                    const response = await api.get<AdminAuthResponse>('/api/admin/me')
-                    setAdmin(response.data.admin)
+                    const response = await api.get<AdminUser>(API_ENDPOINTS.AUTH.PROFILE)
+                    setAdmin(response.data)
                 }
             } catch (error) {
                 console.error('Auth check failed:', error)
                 localStorage.removeItem('admin_token')
+                localStorage.removeItem('admin_refresh_token')
                 delete api.defaults.headers.common['Authorization']
             } finally {
                 setIsLoading(false)
@@ -57,15 +47,27 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     const login = async (email: string, password: string) => {
         try {
             setIsLoading(true)
-            const response = await api.post<AdminAuthResponse>('/api/admin/login', {
+            const response = await api.post<LoginResponse>(API_ENDPOINTS.AUTH.LOGIN, {
                 email,
                 password
             })
-            const { admin: adminData, token } = response.data
+            const { access, refresh } = response.data
 
-            // Set the token in localStorage and API headers
-            localStorage.setItem('admin_token', token)
-            api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+
+            // Set the tokens in localStorage and API headers
+            localStorage.setItem('admin_token', access)
+            localStorage.setItem('admin_refresh_token', refresh)
+            api.defaults.headers.common['Authorization'] = `Bearer ${access}`
+
+            // Fetch admin profile
+            const profileResponse = await api.get<AdminUser>(API_ENDPOINTS.AUTH.PROFILE)
+            const adminData = profileResponse.data
+            console.log('User profile:', adminData)
+            console.log('User role:', adminData.role === 'admin')
+            // Verify that the user is an admin
+            if (adminData.role !== 'admin') {
+                throw new Error('Unauthorized access')
+            }
 
             setAdmin(adminData)
             toast.success(`Welcome back, ${adminData.username}!`)
@@ -79,12 +81,20 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    const logout = () => {
-        setAdmin(null)
-        localStorage.removeItem('admin_token')
-        delete api.defaults.headers.common['Authorization']
-        toast.success('Logged out successfully')
-        navigate('/admin/login')
+    const logout = async () => {
+        try {
+            // Call logout endpoint to blacklist the token
+            await api.post(API_ENDPOINTS.AUTH.LOGOUT)
+        } catch (error) {
+            console.error('Logout failed:', error)
+        } finally {
+            localStorage.removeItem('admin_token')
+            localStorage.removeItem('admin_refresh_token')
+            delete api.defaults.headers.common['Authorization']
+            setAdmin(null)
+            toast.success('Logged out successfully')
+            navigate('/admin/login')
+        }
     }
 
     return (

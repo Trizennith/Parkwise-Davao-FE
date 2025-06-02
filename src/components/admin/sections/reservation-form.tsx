@@ -9,32 +9,29 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select'
-import { Reservation } from '@/services/reservations'
-import { User } from '@/services/users'
+import { Reservation, CreateReservationRequest } from '@/lib/apis/api.reservations'
+import { User } from '@/lib/apis/api.users'
 import { useQuery } from '@tanstack/react-query'
-import { parkingLotsService } from '@/services/parking-lots'
-import { usersService } from '@/services/users'
+import { parkingLotsService } from '@/lib/apis/api.parking-lot'
+import { usersService } from '@/lib/apis/api.users'
 
 interface ReservationFormProps {
-    onSubmit: (data: Omit<Reservation, 'id' | 'createdAt'>) => void
+    onSubmit: (data: CreateReservationRequest) => void
     initialValues?: Reservation
 }
 
 export function ReservationForm({ onSubmit, initialValues }: ReservationFormProps) {
-    const [formData, setFormData] = useState({
-        parkingLotId: initialValues?.parkingLotId || '',
-        parkingLotName: initialValues?.parkingLotName || '',
-        userId: initialValues?.userId || '',
-        userName: initialValues?.userName || '',
-        vehiclePlate: initialValues?.vehiclePlate || '',
+    const [formData, setFormData] = useState<CreateReservationRequest>({
+        parking_lot: initialValues?.parking_lot.id || 0,
+        parking_space: initialValues?.parking_space.id || 0,
+        vehicle_plate: initialValues?.vehicle_plate || '',
         notes: initialValues?.notes || '',
-        startTime: initialValues?.startTime
-            ? new Date(initialValues.startTime).toISOString().slice(0, 16)
+        start_time: initialValues?.start_time
+            ? new Date(initialValues.start_time).toISOString().slice(0, 16)
             : '',
-        endTime: initialValues?.endTime
-            ? new Date(initialValues.endTime).toISOString().slice(0, 16)
-            : '',
-        status: initialValues?.status || 'active'
+        end_time: initialValues?.end_time
+            ? new Date(initialValues.end_time).toISOString().slice(0, 16)
+            : ''
     })
 
     // Fetch parking lots and users for the dropdowns
@@ -51,15 +48,12 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
     useEffect(() => {
         if (initialValues) {
             setFormData({
-                parkingLotId: initialValues.parkingLotId,
-                parkingLotName: initialValues.parkingLotName,
-                userId: initialValues.userId,
-                userName: initialValues.userName,
-                vehiclePlate: initialValues.vehiclePlate,
+                parking_lot: initialValues.parking_lot.id,
+                parking_space: initialValues.parking_space.id,
+                vehicle_plate: initialValues.vehicle_plate,
                 notes: initialValues.notes || '',
-                startTime: new Date(initialValues.startTime).toISOString().slice(0, 16),
-                endTime: new Date(initialValues.endTime).toISOString().slice(0, 16),
-                status: initialValues.status
+                start_time: new Date(initialValues.start_time).toISOString().slice(0, 16),
+                end_time: new Date(initialValues.end_time).toISOString().slice(0, 16)
             })
         }
     }, [initialValues])
@@ -68,31 +62,16 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
         e.preventDefault()
         onSubmit({
             ...formData,
-            startTime: new Date(formData.startTime).toISOString(),
-            endTime: new Date(formData.endTime).toISOString()
+            start_time: new Date(formData.start_time).toISOString(),
+            end_time: new Date(formData.end_time).toISOString()
         })
     }
 
     const handleParkingLotChange = (parkingLotId: string) => {
-        const selectedLot = parkingLots.find(lot => lot.id === parkingLotId)
-        if (selectedLot) {
-            setFormData(prev => ({
-                ...prev,
-                parkingLotId: selectedLot.id,
-                parkingLotName: selectedLot.name
-            }))
-        }
-    }
-
-    const handleUserChange = (userId: string) => {
-        const selectedUser = users.find(user => user.id === userId)
-        if (selectedUser) {
-            setFormData(prev => ({
-                ...prev,
-                userId: selectedUser.id,
-                userName: `${selectedUser.firstName} ${selectedUser.lastName}`
-            }))
-        }
+        setFormData(prev => ({
+            ...prev,
+            parking_lot: Number(parkingLotId)
+        }))
     }
 
     return (
@@ -101,7 +80,7 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
                 <div className="space-y-2">
                     <Label htmlFor="parkingLot">Parking Lot</Label>
                     <Select
-                        value={formData.parkingLotId}
+                        value={formData.parking_lot.toString()}
                         onValueChange={handleParkingLotChange}
                     >
                         <SelectTrigger>
@@ -109,48 +88,8 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
                         </SelectTrigger>
                         <SelectContent>
                             {parkingLots.map(lot => (
-                                <SelectItem key={lot.id} value={lot.id}>
+                                <SelectItem key={lot.id} value={lot.id.toString()}>
                                     {lot.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                        value={formData.status}
-                        onValueChange={value =>
-                            setFormData(prev => ({ ...prev, status: value as Reservation['status'] }))
-                        }
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="user">User</Label>
-                    <Select
-                        value={formData.userId}
-                        onValueChange={handleUserChange}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a user" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {users.map(user => (
-                                <SelectItem key={user.id} value={user.id}>
-                                    {user.firstName} {user.lastName}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -161,9 +100,9 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
                     <Label htmlFor="vehiclePlate">Vehicle Plate</Label>
                     <Input
                         id="vehiclePlate"
-                        value={formData.vehiclePlate}
+                        value={formData.vehicle_plate}
                         onChange={e =>
-                            setFormData(prev => ({ ...prev, vehiclePlate: e.target.value }))
+                            setFormData(prev => ({ ...prev, vehicle_plate: e.target.value }))
                         }
                         required
                     />
@@ -176,9 +115,9 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
                     <Input
                         id="startTime"
                         type="datetime-local"
-                        value={formData.startTime}
+                        value={formData.start_time}
                         onChange={e =>
-                            setFormData(prev => ({ ...prev, startTime: e.target.value }))
+                            setFormData(prev => ({ ...prev, start_time: e.target.value }))
                         }
                         required
                     />
@@ -189,9 +128,9 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
                     <Input
                         id="endTime"
                         type="datetime-local"
-                        value={formData.endTime}
+                        value={formData.end_time}
                         onChange={e =>
-                            setFormData(prev => ({ ...prev, endTime: e.target.value }))
+                            setFormData(prev => ({ ...prev, end_time: e.target.value }))
                         }
                         required
                     />

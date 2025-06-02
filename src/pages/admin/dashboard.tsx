@@ -10,13 +10,13 @@ import { Separator } from '@radix-ui/react-separator'
 import {
     Breadcrumb,
     BreadcrumbItem,
-    BreadcrumbLink,
     BreadcrumbList,
     BreadcrumbPage,
     BreadcrumbSeparator
 } from '@/components/ui/breadcrumb'
 import { useAdminAuth } from '@/context/admin/auth'
 import { SquareTerminal } from 'lucide-react'
+import ErrorBoundary from '@/components/common/ErrorBoundary'
 
 const nav = [
     {
@@ -95,8 +95,8 @@ export default function AdminDashboard() {
                 user={{
                     username: admin?.username || 'Admin',
                     email: admin?.email || 'admin@example.com',
-                    avatarUrl: admin?.avatarUrl || '/avatars/default.jpg',
-                    userType: admin?.userType || 'Admin'
+                    avatarUrl: admin?.avatar_url || '/avatars/default.jpg',
+                    userType: admin?.role || 'Admin'
                 }}
                 header={headerTitle}
                 activeSection={activeSection}
@@ -127,7 +127,17 @@ export default function AdminDashboard() {
                 </header>
                 <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
                     <div className="">
-                        <div>{renderContent()}</div>
+                        <div>
+                            <ErrorBoundary
+                                renderFallback={() => (
+                                    <div className="text-red-500">
+                                        Something went wrong while loading this section.
+                                    </div>
+                                )}
+                            >
+                                {renderContent()}
+                            </ErrorBoundary>
+                        </div>
                     </div>
                 </div>
             </SidebarInset>

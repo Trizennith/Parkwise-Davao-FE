@@ -30,8 +30,9 @@ import {
 } from '@/components/ui/select'
 import { Pencil, Eye, EyeOff } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { api } from '@/lib/apis/api.base'
 import { toast } from 'sonner'
+import { API_ENDPOINTS } from '@/lib/apis/api.constants'
 
 const formSchema = z.object({
     firstName: z.string().min(2, 'First name must be at least 2 characters'),
@@ -99,12 +100,12 @@ export const EditUserDialog: FC<EditUserDialogProps> = ({ user }) => {
 
     const updateUser = useMutation({
         mutationFn: async (values: FormValues) => {
-            const { confirmPassword, ...userData } = values
+            const { ...userData } = values
             // Only include password in the update if it was changed
             if (!userData.password) {
                 delete userData.password
             }
-            const response = await api.patch(`/api/users/${user.id}`, userData)
+            const response = await api.patch(API_ENDPOINTS.ADMIN.USER_DETAILS(user.id), userData)
             return response.data
         },
         onSuccess: () => {

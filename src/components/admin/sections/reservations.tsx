@@ -2,17 +2,14 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle
 } from '@/components/ui/dialog'
-import { CardTitle } from '@/components/ui/card'
 import { Plus, Pencil, Trash2, MoreHorizontal } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { reservationsService, Reservation } from '@/services/reservations'
+import { reservationsService, Reservation, CreateReservationRequest } from '@/lib/apis/api.reservations'
 import { toast } from 'sonner'
 import {
     Table,
@@ -73,7 +70,7 @@ export function Reservations() {
 
     // Update mutation
     const updateMutation = useMutation({
-        mutationFn: ({ id, data }: { id: string; data: Partial<Reservation> }) =>
+        mutationFn: ({ id, data }: { id: number; data: CreateReservationRequest }) =>
             reservationsService.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['reservations'] })
@@ -105,13 +102,13 @@ export function Reservations() {
         setIsOpen(true)
     }
 
-    const handleDelete = (id: string) => {
+    const handleDelete = (id: number) => {
         if (window.confirm('Are you sure you want to delete this reservation?')) {
             deleteMutation.mutate(id)
         }
     }
 
-    const handleSubmit = (data: Omit<Reservation, 'id' | 'createdAt'>) => {
+    const handleSubmit = (data: CreateReservationRequest) => {
         if (selectedReservation) {
             updateMutation.mutate({ id: selectedReservation.id, data })
         } else {
@@ -121,19 +118,19 @@ export function Reservations() {
 
     const columns: ColumnDef<Reservation>[] = [
         {
-            accessorKey: 'parkingLotName',
+            accessorKey: 'parking_lot.name',
             header: 'Parking Lot',
-            cell: ({ row }) => <div className="font-medium">{row.getValue('parkingLotName')}</div>
+            cell: ({ row }) => <div className="font-medium">{row.original.parking_lot.name}</div>
         },
         {
-            accessorKey: 'userName',
+            accessorKey: 'user.username',
             header: 'User',
-            cell: ({ row }) => <div>{row.getValue('userName')}</div>
+            cell: ({ row }) => <div>{row.original.user.username}</div>
         },
         {
-            accessorKey: 'vehiclePlate',
+            accessorKey: 'vehicle_plate',
             header: 'Vehicle Plate',
-            cell: ({ row }) => <div>{row.getValue('vehiclePlate')}</div>
+            cell: ({ row }) => <div>{row.getValue('vehicle_plate')}</div>
         },
         {
             accessorKey: 'notes',
@@ -150,17 +147,17 @@ export function Reservations() {
             }
         },
         {
-            accessorKey: 'startTime',
+            accessorKey: 'start_time',
             header: 'Start Time',
             cell: ({ row }) => (
-                <div>{format(new Date(row.getValue('startTime')), 'MMM d, yyyy h:mm a')}</div>
+                <div>{format(new Date(row.getValue('start_time')), 'MMM d, yyyy h:mm a')}</div>
             )
         },
         {
-            accessorKey: 'endTime',
+            accessorKey: 'end_time',
             header: 'End Time',
             cell: ({ row }) => (
-                <div>{format(new Date(row.getValue('endTime')), 'MMM d, yyyy h:mm a')}</div>
+                <div>{format(new Date(row.getValue('end_time')), 'MMM d, yyyy h:mm a')}</div>
             )
         },
         {

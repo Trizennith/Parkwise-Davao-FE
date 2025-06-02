@@ -2,7 +2,6 @@ import { AppSidebar, AppSidebarNavigationType } from '@/components/user/app-side
 import {
     Breadcrumb,
     BreadcrumbItem,
-    BreadcrumbLink,
     BreadcrumbList,
     BreadcrumbPage,
     BreadcrumbSeparator
@@ -15,6 +14,7 @@ import Reservations from '@/components/user/sections/reservations'
 import Profile from '@/components/user/sections/profile'
 import { useUserAuth } from '@/context/user/auth'
 import { SquareTerminal } from 'lucide-react'
+import ErrorBoundary from '@/components/common/ErrorBoundary'
 
 const nav = [
     {
@@ -79,7 +79,7 @@ export default function Dashboard() {
                 user={{
                     username: user?.username || 'Admin',
                     email: user?.email || 'admin@example.com',
-                    avatarUrl: user?.avatarUrl || '/avatars/default.jpg',
+                    avatarUrl: user?.avatar_url || '/avatars/default.jpg',
                     userType: user?.role || 'Admin'
                 }}
                 header={headerTitle}
@@ -110,9 +110,15 @@ export default function Dashboard() {
                     </div>
                 </header>
                 <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-                    <div className="">
-                        <div>{renderContent()}</div>
-                    </div>
+                    <ErrorBoundary
+                        renderFallback={() => (
+                            <div className="text-red-500">
+                                Something went wrong while loading this section.
+                            </div>
+                        )}
+                    >
+                        {renderContent()}
+                    </ErrorBoundary>
                     {/* <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" /> */}
                 </div>
             </SidebarInset>

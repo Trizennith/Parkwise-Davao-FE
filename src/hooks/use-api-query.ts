@@ -1,6 +1,6 @@
 import { useQuery, useMutation, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query'
 import { useApiError } from './use-api-error'
-import { api } from '@/lib/api'
+import { api } from '@/lib/apis/api.base'
 
 interface QueryConfig<TData, TError> extends Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'> {
   onSuccess?: (data: TData) => void

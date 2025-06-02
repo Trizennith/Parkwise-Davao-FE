@@ -57,6 +57,46 @@ export default tseslint.config({
 
 A modern web application for managing parking spaces in Davao City.
 
+## Features
+
+- Real-time parking space monitoring
+- Interactive map for parking lot selection
+- User and admin authentication
+- Parking lot status management (active/maintenance/closed)
+- Reservation system
+- Responsive design with dark/light mode support
+
+## Tech Stack
+
+- React + TypeScript
+- Vite
+- TanStack Query (React Query)
+- React Router
+- Tailwind CSS
+- Shadcn UI Components
+- Leaflet for Maps
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create a `.env` file in the root directory with the following variables:
+```env
+VITE_API_URL=http://localhost:3000/api
+VITE_APP_TITLE="Smart Parking Davao"
+VITE_SHORT_APP_DESC="Parking Management System"
+VITE_TEST_MODE=true # Set to false in production
+```
+
+4. Start the development server:
+```bash
+npm run dev
+```
+
 ## API Documentation
 
 The application expects a RESTful API with the following endpoints and data structures.
@@ -76,6 +116,38 @@ Authorization: Bearer <token>
 ```
 
 ### Endpoints
+
+#### Authentication
+
+##### POST /api/login
+Unified login endpoint for both users and admins.
+
+Request:
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
+
+Response:
+```json
+{
+  "user": {
+    "id": "string",
+    "firstName": "string",
+    "lastName": "string",
+    "username": "string",
+    "email": "string",
+    "role": "user" | "admin",
+    "status": "active" | "inactive",
+    "avatarUrl": "string"
+  },
+  "token": "string"
+}
+```
+
+Note: The response includes a `role` field that determines whether the user is a regular user or an admin. The frontend will handle routing to the appropriate dashboard based on this role.
 
 #### Users
 
@@ -279,12 +351,10 @@ Request:
 ```json
 {
   "parkingLotId": "string",
-  "userId": "string",
   "vehiclePlate": "string",
   "notes": "string",
   "startTime": "string (ISO date)",
-  "endTime": "string (ISO date)",
-  "status": "active" | "completed" | "cancelled"
+  "endTime": "string (ISO date)"
 }
 ```
 
@@ -294,8 +364,6 @@ Update a reservation.
 Request:
 ```json
 {
-  "parkingLotId": "string",
-  "userId": "string",
   "vehiclePlate": "string",
   "notes": "string",
   "startTime": "string (ISO date)",
@@ -462,26 +530,41 @@ Response:
 
 ## Development
 
-1. Install dependencies:
-```bash
-npm install
-```
-
-2. Start the development server:
-```bash
-npm run dev
-```
-
-3. Build for production:
-```bash
-npm run build
-```
-
-## Environment Variables
-
-Create a `.env` file with the following variables:
+### Project Structure
 
 ```
-VITE_API_URL=http://localhost:3000/api
-VITE_TEST_MODE=true
+src/
+├── components/         # Reusable components
+│   ├── admin/         # Admin-specific components
+│   ├── user/          # User-specific components
+│   └── ui/            # UI components
+├── context/           # React context providers
+├── hooks/             # Custom React hooks
+├── layout/            # Layout components
+├── lib/               # Utility functions
+├── mocks/             # Mock data and handlers
+├── pages/             # Page components
+│   ├── admin/         # Admin pages
+│   └── user/          # User pages
+└── types/             # TypeScript type definitions
 ```
+
+### Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run type-check` - Run TypeScript type checking
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

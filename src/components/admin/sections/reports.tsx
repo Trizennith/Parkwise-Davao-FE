@@ -1,7 +1,7 @@
 import { FC } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar, Download, BarChart2, TrendingUp, Users, Car, Clock } from 'lucide-react'
+import { Calendar, Download, BarChart2, TrendingUp, Car, Clock } from 'lucide-react'
 import {
     AreaChart,
     Area,
@@ -19,7 +19,7 @@ import {
     Line
 } from 'recharts'
 import { useQuery } from '@tanstack/react-query'
-import { reportsService } from '@/services/reports'
+import { reportsService } from '@/lib/apis/api.reports'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 
@@ -52,8 +52,12 @@ export const Reports: FC = () => {
         queryFn: reportsService.getUserDemographics
     })
 
-    const isLoading = isLoadingSummary || isLoadingReservations || isLoadingRevenue || 
-                     isLoadingPeakHours || isLoadingDemographics
+    const isLoading =
+        isLoadingSummary ||
+        isLoadingReservations ||
+        isLoadingRevenue ||
+        isLoadingPeakHours ||
+        isLoadingDemographics
 
     if (isLoading) {
         return (
@@ -91,9 +95,7 @@ export const Reports: FC = () => {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Total Revenue
-                        </CardTitle>
+                        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -101,49 +103,61 @@ export const Reports: FC = () => {
                             ₱{summary?.totalRevenue?.toLocaleString() ?? '0'}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {summary?.revenueChange ? (summary.revenueChange > 0 ? '+' : '') + summary.revenueChange : '0'}% from last month
+                            {summary?.revenueChange
+                                ? (summary.revenueChange > 0 ? '+' : '') + summary.revenueChange
+                                : '0'}
+                            % from last month
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Daily Reservations
-                        </CardTitle>
+                        <CardTitle className="text-sm font-medium">Daily Reservations</CardTitle>
                         <Car className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{summary?.dailyReservations ?? '0'}</div>
+                        <div className="text-2xl font-bold">
+                            {summary?.dailyReservations ?? '0'}
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                            {summary?.reservationChange ? (summary.reservationChange > 0 ? '+' : '') + summary.reservationChange : '0'}% from last week
+                            {summary?.reservationChange
+                                ? (summary.reservationChange > 0 ? '+' : '') +
+                                  summary.reservationChange
+                                : '0'}
+                            % from last week
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Parking Utilization
-                        </CardTitle>
+                        <CardTitle className="text-sm font-medium">Parking Utilization</CardTitle>
                         <BarChart2 className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{summary?.parkingUtilization ?? '0'}%</div>
+                        <div className="text-2xl font-bold">
+                            {summary?.parkingUtilization ?? '0'}%
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                            {summary?.utilizationChange ? (summary.utilizationChange > 0 ? '+' : '') + summary.utilizationChange : '0'}% from last month
+                            {summary?.utilizationChange
+                                ? (summary.utilizationChange > 0 ? '+' : '') +
+                                  summary.utilizationChange
+                                : '0'}
+                            % from last month
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Average Duration
-                        </CardTitle>
+                        <CardTitle className="text-sm font-medium">Average Duration</CardTitle>
                         <Clock className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{summary?.averageDuration ?? '0'}h</div>
                         <p className="text-xs text-muted-foreground">
-                            {summary?.durationChange ? (summary.durationChange > 0 ? '+' : '') + summary.durationChange : '0'}h from last month
+                            {summary?.durationChange
+                                ? (summary.durationChange > 0 ? '+' : '') + summary.durationChange
+                                : '0'}
+                            h from last month
                         </p>
                     </CardContent>
                 </Card>
@@ -158,14 +172,19 @@ export const Reports: FC = () => {
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={dailyReservations}>
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis 
-                                        dataKey="date" 
+                                    <XAxis
+                                        dataKey="date"
                                         tickFormatter={(date) => format(new Date(date), 'MMM d')}
                                     />
                                     <YAxis />
-                                    <Tooltip 
-                                        labelFormatter={(date) => format(new Date(date), 'MMM d, yyyy')}
-                                        formatter={(value) => [`${value} reservations`, 'Reservations']}
+                                    <Tooltip
+                                        labelFormatter={(date) =>
+                                            format(new Date(date), 'MMM d, yyyy')
+                                        }
+                                        formatter={(value) => [
+                                            `${value} reservations`,
+                                            'Reservations'
+                                        ]}
                                     />
                                     <Area
                                         type="monotone"
@@ -188,16 +207,21 @@ export const Reports: FC = () => {
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={revenueData}>
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis 
+                                    <XAxis
                                         dataKey="date"
                                         tickFormatter={(date) => format(new Date(date), 'MMM yyyy')}
                                     />
-                                    <YAxis 
+                                    <YAxis
                                         tickFormatter={(value) => `₱${value.toLocaleString()}`}
                                     />
-                                    <Tooltip 
-                                        labelFormatter={(date) => format(new Date(date), 'MMMM yyyy')}
-                                        formatter={(value) => [`₱${value.toLocaleString()}`, 'Revenue']}
+                                    <Tooltip
+                                        labelFormatter={(date) =>
+                                            format(new Date(date), 'MMMM yyyy')
+                                        }
+                                        formatter={(value) => [
+                                            `₱${value.toLocaleString()}`,
+                                            'Revenue'
+                                        ]}
                                     />
                                     <Line
                                         type="monotone"
@@ -223,9 +247,7 @@ export const Reports: FC = () => {
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="hour" />
                                     <YAxis />
-                                    <Tooltip 
-                                        formatter={(value) => [`${value}%`, 'Usage']}
-                                    />
+                                    <Tooltip formatter={(value) => [`${value}%`, 'Usage']} />
                                     <Bar dataKey="usage" fill="#8884d8" />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -248,15 +270,18 @@ export const Reports: FC = () => {
                                         outerRadius={80}
                                         fill="#8884d8"
                                         dataKey="value"
-                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                        label={({ name, percent }) =>
+                                            `${name} ${(percent * 100).toFixed(0)}%`
+                                        }
                                     >
                                         {userDemographics?.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            <Cell
+                                                key={`cell-${index}`}
+                                                fill={COLORS[index % COLORS.length]}
+                                            />
                                         ))}
                                     </Pie>
-                                    <Tooltip 
-                                        formatter={(value) => [`${value}%`, 'Users']}
-                                    />
+                                    <Tooltip formatter={(value) => [`${value}%`, 'Users']} />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -265,4 +290,4 @@ export const Reports: FC = () => {
             </div>
         </div>
     )
-} 
+}

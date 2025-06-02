@@ -33,24 +33,46 @@ const icon = new Icon({
 })
 
 interface ParkingLot {
-    id: string
+    id: number
     name: string
-    location: {
-        lat: number
-        lng: number
-    }
     address: string
-    totalSpaces: number
-    availableSpaces: number
-    status: 'active' | 'maintenance'
+    latitude: string
+    longitude: string
+    total_spaces: number
+    available_spaces: number
+    status: 'active' | 'maintenance' | 'closed'
+    hourly_rate: string
 }
 
 interface Reservation {
-    id: string
-    parkingLotId: string
-    startTime: string
-    endTime: string
+    id: number
+    parking_lot: {
+        id: number
+        name: string
+    }
+    parking_space: {
+        id: number
+        space_number: string
+    }
+    user: {
+        id: number
+        username: string
+        email: string
+    }
+    vehicle_plate: string
+    start_time: string
+    end_time: string
     status: 'active' | 'completed' | 'cancelled'
+    notes?: string
+    total_cost: string
+    created_at: string
+}
+
+interface PaginatedResponse<T> {
+    count: number
+    next: string | null
+    previous: string | null
+    results: T[]
 }
 
 export default function ParkingLots() {
@@ -62,13 +84,15 @@ export default function ParkingLots() {
     const queryClient = useQueryClient()
 
     // Fetch parking lots using the new hook
-    const { data: parkingLots, isLoading } = useApiQuery<ParkingLot[]>(
+    const { data: parkingLotsResponse, isLoading } = useApiQuery<PaginatedResponse<ParkingLot>>(
         ['parking-lots'],
         '/api/parking-lots'
     )
 
+    const parkingLots = parkingLotsResponse?.results || []
+
     // Create reservation using the new hook
-    const createReservation = useApiMutation<Reservation, { lotId: string; vehiclePlate: string; notes: string }>(
+    const createReservation = useApiMutation<Reservation, { lotId: number; vehiclePlate: string; notes: string }>(
         '/api/reservations',
         'post',
         {
@@ -105,8 +129,13 @@ export default function ParkingLots() {
 
     return (
         <div className="space-y-4">
+            {parkingLotsResponse && (
+                <p className="text-sm text-muted-foreground">
+                    Total parking lots: {parkingLotsResponse.count}
+                </p>
+            )}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {parkingLots?.map((lot) => (
+                {parkingLots.map((lot) => (
                     <Card key={lot.id}>
                         <CardHeader>
                             <CardTitle>{lot.name}</CardTitle>
@@ -116,20 +145,26 @@ export default function ParkingLots() {
                             <div className="space-y-2">
                                 <div className="flex justify-between">
                                     <span>Available Spaces:</span>
-                                    <Badge variant={lot.availableSpaces > 0 ? 'default' : 'destructive'}>
-                                        {lot.availableSpaces} / {lot.totalSpaces}
+                                    <Badge variant={lot.available_spaces > 0 ? 'default' : 'destructive'}>
+                                        {lot.available_spaces} / {lot.total_spaces}
                                     </Badge>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Status:</span>
-                                    <Badge variant={lot.status === 'active' ? 'default' : 'warning'}>
+                                    <Badge variant={lot.status === 'active' ? 'default' : lot.status === 'maintenance' ? 'warning' : 'destructive'}>
                                         {lot.status}
                                     </Badge>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Coordinates:</span>
                                     <span className="text-sm text-muted-foreground">
-                                        {lot.location.lat.toFixed(6)}, {lot.location.lng.toFixed(6)}
+                                        {parseFloat(lot.latitude).toFixed(6)}, {parseFloat(lot.longitude).toFixed(6)}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Hourly Rate:</span>
+                                    <span className="text-sm text-muted-foreground">
+                                        ${parseFloat(lot.hourly_rate).toFixed(2)}/hour
                                     </span>
                                 </div>
                                 <div className="flex flex-col gap-2 pt-4">
@@ -148,7 +183,7 @@ export default function ParkingLots() {
                                             setSelectedLot(lot)
                                             setShowReservation(true)
                                         }}
-                                        disabled={lot.availableSpaces === 0 || lot.status !== 'active'}
+                                        disabled={lot.available_spaces === 0 || lot.status !== 'active'}
                                     >
                                         Reserve Space
                                     </Button>
@@ -170,7 +205,7 @@ export default function ParkingLots() {
                     </DialogHeader>
                     <div className="h-[400px] w-full">
                         <MapContainer
-                            center={[selectedLot?.location.lat || 0, selectedLot?.location.lng || 0]}
+                            center={[parseFloat(selectedLot?.latitude || '0'), parseFloat(selectedLot?.longitude || '0')]}
                             zoom={15}
                             style={{ height: '100%', width: '100%' }}
                         >
@@ -180,7 +215,7 @@ export default function ParkingLots() {
                             />
                             {selectedLot && (
                                 <Marker
-                                    position={[selectedLot.location.lat, selectedLot.location.lng]}
+                                    position={[parseFloat(selectedLot.latitude), parseFloat(selectedLot.longitude)]}
                                     icon={icon}
                                 />
                             )}
@@ -221,7 +256,8 @@ export default function ParkingLots() {
                             <Label>Location Details</Label>
                             <div className="text-sm text-muted-foreground">
                                 <p>Address: {selectedLot?.address}</p>
-                                <p>Coordinates: {selectedLot?.location.lat.toFixed(6)}, {selectedLot?.location.lng.toFixed(6)}</p>
+                                <p>Coordinates: {parseFloat(selectedLot?.latitude || '0').toFixed(6)}, {parseFloat(selectedLot?.longitude || '0').toFixed(6)}</p>
+                                <p>Hourly Rate: ${parseFloat(selectedLot?.hourly_rate || '0').toFixed(2)}/hour</p>
                             </div>
                         </div>
                     </div>

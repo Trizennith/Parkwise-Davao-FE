@@ -5,16 +5,12 @@ import { Icon } from 'leaflet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, ZoomIn, ZoomOut, Navigation } from 'lucide-react'
+import { Loader2, ZoomIn, ZoomOut, Navigation, MapPin } from 'lucide-react'
 import { useTheme } from '@/components/theme-provider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/components/ui/select'
+import { LeafletMouseEvent } from 'leaflet'
+import { ParkingLot } from '@/lib/apis/api.parking-lot'
+import { ParkingLotStatus } from './status-selections'
 
 // Fix for default marker icon
 const icon = new Icon({
@@ -123,222 +119,203 @@ function MapControls() {
     )
 }
 
-export interface OnLocationClickType {
+export type OnLocationClickType = {
+    name: string
     lat: number
     lng: number
-    name: string
     address: string
-    totalSpaces: number
-    availableSpaces: number
+    total_spaces: number
+    available_spaces: number
+    hourly_rate: number
 }
 
 interface MapPickerPropsType {
-    onLocationSelect: (location: OnLocationClickType) => void
-    initialPosition?: [number, number]
-    initialValues?: OnLocationClickType
-    status: ParkingLotStatus
-    setStatus: (value: ParkingLotStatus) => void
-}
-export type ParkingLotStatus = 'active' | 'maintenance' | 'closed'
-
-function StatusSelections({
-    status,
-    setStatus
-}: {
-    status: ParkingLotStatus
-    setStatus: (value: ParkingLotStatus) => void
-}) {
-    return (
-        <Select value={status} onValueChange={(value: ParkingLotStatus) => setStatus(value)}>
-            <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="maintenance">Maintenance</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-            </SelectContent>
-        </Select>
-    )
+    onLocationClick: (location: OnLocationClickType) => void
+    selectedLot?: {
+        name: string
+        latitude: string
+        longitude: string
+        address: string
+        total_spaces: number
+        available_spaces: number
+        hourly_rate: number
+        status: ParkingLotStatus
+    } | null
 }
 
 export function MapPicker({
-    status,
-    setStatus,
-    onLocationSelect,
-    initialPosition,
-    initialValues
+    onLocationClick,
+    selectedLot
 }: MapPickerPropsType) {
-    const [position, setPosition] = useState<[number, number] | null>(initialPosition || null)
-    const [locationName, setLocationName] = useState(initialValues?.name || '')
-    const [address, setAddress] = useState(initialValues?.address || '')
+    const [position, setPosition] = useState<[number, number] | null>(selectedLot ? [parseFloat(selectedLot.latitude), parseFloat(selectedLot.longitude)] : null)
+    const [locationName, setLocationName] = useState(selectedLot?.name || '')
+    const [address, setAddress] = useState(selectedLot?.address || '')
     const [isLoadingAddress, setIsLoadingAddress] = useState(false)
-    const [totalSpaces, setTotalSpaces] = useState<number>(initialValues?.totalSpaces || 0)
-    const [availableSpaces, setAvailableSpaces] = useState<number>(
-        initialValues?.availableSpaces || 0
-    )
+    const [totalSpaces, setTotalSpaces] = useState<number>(selectedLot?.total_spaces || 0)
+    const [availableSpaces, setAvailableSpaces] = useState<number>(selectedLot?.available_spaces || 0)
+    const [hourlyRate, setHourlyRate] = useState<number>(selectedLot?.hourly_rate || 0)
     const { theme } = useTheme()
 
-    // Update form when initialValues change
     useEffect(() => {
-        if (initialValues) {
-            setLocationName(initialValues.name)
-            setAddress(initialValues.address)
-            setTotalSpaces(initialValues.totalSpaces)
-            setAvailableSpaces(initialValues.availableSpaces)
-            setPosition([initialValues.lat, initialValues.lng])
+        if (selectedLot) {
+            setLocationName(selectedLot.name || '')
+            setAddress(selectedLot.address || '')
+            setTotalSpaces(selectedLot.total_spaces || 0)
+            setAvailableSpaces(selectedLot.available_spaces || 0)
+            setHourlyRate(selectedLot.hourly_rate || 0)
+            if (selectedLot.latitude && selectedLot.longitude) {
+                setPosition([parseFloat(selectedLot.latitude), parseFloat(selectedLot.longitude)])
+            }
         }
-    }, [initialValues])
+    }, [selectedLot])
 
-    const handleTotalSpacesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = parseInt(e.target.value) || 0
-        setTotalSpaces(value)
-        // Ensure available spaces doesn't exceed total spaces
-        if (availableSpaces > value) {
-            setAvailableSpaces(value)
-        }
-    }
-
-    const handleAvailableSpacesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = parseInt(e.target.value) || 0
-        // Ensure available spaces doesn't exceed total spaces
-        if (value <= totalSpaces) {
-            setAvailableSpaces(value)
-        }
-    }
-
-    const fetchAddress = async (lat: number, lng: number) => {
+    const handleMapClick = (e: LeafletMouseEvent) => {
+        const { lat, lng } = e.latlng
+        setPosition([lat, lng])
         setIsLoadingAddress(true)
-        try {
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
-            )
-            const data = await response.json()
-            setAddress(data.display_name)
-        } catch (error) {
-            console.error('Error fetching address:', error)
-            setAddress('')
-        } finally {
-            setIsLoadingAddress(false)
-        }
-    }
 
-    const handlePositionChange = (newPosition: [number, number]) => {
-        setPosition(newPosition)
-        fetchAddress(newPosition[0], newPosition[1])
+        // Reverse geocode to get address
+        fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+        )
+            .then((res) => res.json())
+            .then((data) => {
+                setAddress(data.display_name)
+                setIsLoadingAddress(false)
+            })
+            .catch((error) => {
+                console.error('Error fetching address:', error)
+                setIsLoadingAddress(false)
+            })
     }
 
     const handleSubmit = () => {
         if (position && locationName) {
-            onLocationSelect({
-                lat: position[0],
-                lng: position[1],
+            // Format coordinates to have no more than 9 digits total
+            const lat = position[0].toFixed(6)
+            const lng = position[1].toFixed(6)
+            
+            onLocationClick({
                 name: locationName,
+                lat: parseFloat(lat),
+                lng: parseFloat(lng),
                 address: address,
-                totalSpaces,
-                availableSpaces
+                total_spaces: totalSpaces,
+                available_spaces: availableSpaces,
+                hourly_rate: hourlyRate
             })
         }
     }
 
     return (
-        <div className="relative w-full">
-            <div className="flex xl:flex-row  flex-col gap-4 ">
-                <div className="xl:flex-2  relative aspect-[16/9] w-full rounded-md border overflow-hidden">
-                    <MapContainer
-                        center={initialPosition || [7.1907, 125.4553]} // Davao City coordinates
-                        zoom={13}
-                        style={{ height: '100%', width: '100%' }}
-                        zoomControl={false}
-                    >
-                        <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                            url={
-                                theme === 'dark'
-                                    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                                    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-                            }
-                        />
-                        <LocationMarker
+        <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="locationName">Location Name</Label>
+                    <Input
+                        id="locationName"
+                        value={locationName}
+                        onChange={(e) => setLocationName(e.target.value)}
+                        placeholder="Enter location name"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input
+                        id="address"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder={isLoadingAddress ? 'Loading address...' : 'Enter address'}
+                        disabled={isLoadingAddress}
+                    />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="totalSpaces">Total Spaces</Label>
+                    <Input
+                        id="totalSpaces"
+                        type="number"
+                        value={totalSpaces}
+                        onChange={(e) => setTotalSpaces(parseInt(e.target.value) || 0)}
+                        min="0"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="availableSpaces">Available Spaces</Label>
+                    <Input
+                        id="availableSpaces"
+                        type="number"
+                        value={availableSpaces}
+                        onChange={(e) => setAvailableSpaces(parseInt(e.target.value) || 0)}
+                        min="0"
+                        max={totalSpaces}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
+                    <Input
+                        id="hourlyRate"
+                        type="number"
+                        step="0.01"
+                        value={hourlyRate}
+                        onChange={(e) => setHourlyRate(parseFloat(e.target.value))}
+                        min="0"
+                    />
+                </div>
+            </div>
+
+            <div className="h-[400px] w-full rounded-md border">
+                <MapContainer
+                    center={position || [7.1907, 125.4553]} // Davao City coordinates
+                    zoom={13}
+                    style={{ height: '100%', width: '100%' }}
+                >
+                    <TileLayer
+                        url={
+                            theme === 'dark'
+                                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                                : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                        }
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    />
+                    {position && (
+                        <Marker
                             position={position}
-                            setPosition={setPosition}
-                            onPositionChange={handlePositionChange}
+                            icon={icon}
                         />
-                        <MapControls />
-                    </MapContainer>
-                </div>
-                <div className="flex xl:flex-1 flex-col  w-full gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="location-name">Location Name</Label>
-                        <Input
-                            id="location-name"
-                            placeholder="Enter parking location name"
-                            value={locationName}
-                            onChange={(e) => setLocationName(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="total-spaces">Total Spaces</Label>
-                            <Input
-                                id="total-spaces"
-                                type="number"
-                                min="0"
-                                value={totalSpaces}
-                                onChange={handleTotalSpacesChange}
-                                placeholder="Enter total parking spaces"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="available-spaces">Available Spaces</Label>
-                            <Input
-                                id="available-spaces"
-                                type="number"
-                                min="0"
-                                max={totalSpaces}
-                                value={availableSpaces}
-                                onChange={handleAvailableSpacesChange}
-                                placeholder="Enter available spaces"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="status">Status</Label>
-                        <StatusSelections status={status} setStatus={setStatus} />
-                    </div>
-
-                    {position && (
-                        <div className="space-y-2">
-                            <Label>Address</Label>
-                            <div className="rounded-md border p-2 text-sm">
-                                {isLoadingAddress ? (
-                                    <div className="flex items-center gap-2">
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Loading address...
-                                    </div>
-                                ) : (
-                                    address || 'No address found'
-                                )}
-                            </div>
-                        </div>
                     )}
+                    <MapEvents onMapClick={handleMapClick} />
+                    <MapControls />
+                </MapContainer>
+            </div>
 
-                    {position && (
-                        <div className="space-y-2">
-                            <Label>Coordinates</Label>
-                            <div className="rounded-md border p-2 text-sm font-mono">
-                                {position[0].toFixed(6)}, {position[1].toFixed(6)}
-                            </div>
-                        </div>
-                    )}
-                    <Button onClick={handleSubmit} disabled={!position || !locationName}>
-                        Save Location
-                    </Button>
+            {position && (
+                <div className="text-sm text-muted-foreground">
+                    Selected coordinates: {position[0].toFixed(6)}, {position[1].toFixed(6)}
                 </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setPosition(null)}>
+                    Cancel
+                </Button>
+                <Button onClick={handleSubmit} disabled={!position || !locationName}>
+                    {selectedLot ? 'Update Location' : 'Add Location'}
+                </Button>
             </div>
         </div>
     )
+}
+
+function MapEvents({ onMapClick }: { onMapClick: (e: LeafletMouseEvent) => void }) {
+    const map = useMap()
+    useEffect(() => {
+        map.on('click', onMapClick)
+        return () => {
+            map.off('click', onMapClick)
+        }
+    }, [map, onMapClick])
+    return null
 }

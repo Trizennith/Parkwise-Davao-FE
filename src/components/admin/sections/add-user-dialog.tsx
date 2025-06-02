@@ -30,8 +30,9 @@ import {
 } from '@/components/ui/select'
 import { Plus, Eye, EyeOff } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { api } from '@/lib/apis/api.base'
 import { toast } from 'sonner'
+import { API_ENDPOINTS } from '@/lib/apis/api.constants'
 
 const formSchema = z.object({
     firstName: z.string().min(2, 'First name must be at least 2 characters'),
@@ -81,8 +82,8 @@ export const AddUserDialog: FC<AddUserDialogProps> = ({ trigger }) => {
 
     const createUser = useMutation({
         mutationFn: async (values: FormValues) => {
-            const { confirmPassword, ...userData } = values
-            const response = await api.post('/api/users', userData)
+            const { ...userData } = values
+            const response = await api.post(API_ENDPOINTS.ADMIN.USERS, userData)
             return response.data
         },
         onSuccess: () => {
