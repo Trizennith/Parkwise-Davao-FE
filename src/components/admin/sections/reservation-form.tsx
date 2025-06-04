@@ -10,7 +10,6 @@ import {
     SelectValue
 } from '@/components/ui/select'
 import { Reservation, CreateReservationRequest } from '@/lib/apis/api.reservations'
-import { User } from '@/lib/apis/api.users'
 import { useQuery } from '@tanstack/react-query'
 import { parkingLotsService, ParkingLot } from '@/lib/apis/api.parking-lot'
 import { usersService } from '@/lib/apis/api.users'
@@ -72,7 +71,10 @@ export function ReservationForm({ onSubmit, initialValues }: ReservationFormProp
 
     const { data: usersResponse } = useQuery({
         queryKey: ['users'],
-        queryFn: usersService.getAll
+        queryFn: async () => {
+            const response = await usersService.getAll();
+            return response;
+        }
     })
 
     useEffect(() => {

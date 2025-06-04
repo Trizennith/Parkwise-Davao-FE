@@ -140,7 +140,7 @@ export const EditUserDialog: FC<EditUserDialogProps> = ({ user }) => {
                     <Pencil className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className='w-full max-w-[800px]'>
                 <DialogHeader>
                     <DialogTitle>Edit User</DialogTitle>
                     <DialogDescription>

@@ -173,6 +173,7 @@ export interface ParkingLotReportResponse {
 }
 
 export const BASE_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+export const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:8000'
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -195,7 +196,10 @@ export const API_ENDPOINTS = {
         RESERVATION_DETAILS: (id: number) => `/api/user/reservations/${id}/`,
         CANCEL_RESERVATION: (id: number) => `/api/user/reservations/${id}/cancel/`,
         PARKING_LOTS: '/api/user/parking-lots/',
-        PARKING_LOT_DETAILS: (id: number) => `/api/user/parking-lots/${id}/`
+        PARKING_LOT_DETAILS: (id: number) => `/api/user/parking-lots/${id}/`,
+        NOTIFICATIONS: '/api/user/notifications/',
+        NOTIFICATION_MARK_READ: (id: string) => `/api/user/notifications/${id}/mark-read/`,
+        WS_TOKEN: '/api/auth/token/ws/'
     },
 
     // Admin endpoints

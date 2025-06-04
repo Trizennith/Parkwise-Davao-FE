@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { useNavigate } from 'react-router-dom'
 import { Command } from 'lucide-react'
-import { ModeToggle } from '@/components/mode-toggle'
+import { ModeToggle } from '@/components/theme.toggle'
 
 export default function AdminLogin() {
     const [email, setEmail] = useState('')

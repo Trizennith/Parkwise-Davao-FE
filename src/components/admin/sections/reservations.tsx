@@ -24,7 +24,6 @@ import { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { ReservationForm } from './reservation-form'
-import { parkingLotsService } from '@/lib/apis/api.parking-lot'
 
 const TEST_MODE = import.meta.env.VITE_TEST_MODE === 'true'
 
@@ -274,7 +273,7 @@ export function Reservations() {
             />
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="sm:max-w-[600px]">
+                <DialogContent className="w-full max-w-[800px]">
                     <DialogHeader>
                         <DialogTitle>
                             {selectedReservation ? 'Edit Reservation' : 'Add New Reservation'}

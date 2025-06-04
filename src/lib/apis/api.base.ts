@@ -45,7 +45,12 @@ api.interceptors.request.use((config) => {
 
     return config
 })
-
+api.interceptors.request.use((config) => {
+    if (config.data) {
+        console.log('Request Data:', JSON.stringify(config.data, null, 2))
+    }
+    return config
+})
 api.interceptors.response.use(
     (response) => response,
     async (error) => {

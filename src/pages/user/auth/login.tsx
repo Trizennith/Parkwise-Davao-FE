@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 import { Command } from 'lucide-react'
-import { ModeToggle } from '@/components/mode-toggle'
+import { ModeToggle } from '@/components/theme.toggle'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')

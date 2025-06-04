@@ -1,7 +1,6 @@
 'use client'
 
 import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from 'lucide-react'
-
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
     DropdownMenu,
@@ -18,6 +17,7 @@ import {
     SidebarMenuItem,
     useSidebar
 } from '@/components/ui/sidebar'
+import { Badge } from '@/components/ui/badge'
 
 export interface NavUserPropType {
     username: string
@@ -26,7 +26,15 @@ export interface NavUserPropType {
     userType: string
 }
 
-export function NavUser({ user, onLogout }: { user: NavUserPropType; onLogout: () => void }) {
+export function NavUser({
+    user,
+    onLogout,
+    onNotificationClick
+}: {
+    user: NavUserPropType
+    onLogout: () => void
+    onNotificationClick: () => void
+}) {
     const { isMobile } = useSidebar()
 
     return (
@@ -73,7 +81,7 @@ export function NavUser({ user, onLogout }: { user: NavUserPropType; onLogout: (
                                 <BadgeCheck />
                                 Settings
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={onNotificationClick}>
                                 <Bell />
                                 Notifications
                             </DropdownMenuItem>

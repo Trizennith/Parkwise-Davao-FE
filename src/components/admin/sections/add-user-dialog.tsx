@@ -110,7 +110,7 @@ export const AddUserDialog: FC<AddUserDialogProps> = ({ trigger }) => {
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className='w-full max-w-[800px]'>
                 <DialogHeader>
                     <DialogTitle>Add New User</DialogTitle>
                     <DialogDescription>

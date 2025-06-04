@@ -13,7 +13,7 @@ import {
     SidebarRail,
     useSidebar
 } from '@/components/ui/sidebar'
-import { ModeToggle } from '../mode-toggle'
+import { ModeToggle } from '../theme.toggle'
 
 export interface AppSidebarNavigationType<SEC_TYPE> {
     title: string
@@ -28,13 +28,15 @@ export function AppSidebar<SEC_TYPE>({
     header,
     activeSection,
     updateSection,
-    onLogout
+    onLogout,
+    onNotificationClick
 }: {
     user: NavUserPropType
     header: { title: string; description: string }
     activeSection: SEC_TYPE
     navigation: AppSidebarNavigationType<SEC_TYPE>[]
     onLogout: () => void
+    onNotificationClick: () => void
     updateSection: (section: SEC_TYPE) => void
 }) {
     const { state } = useSidebar()
@@ -70,7 +72,15 @@ export function AppSidebar<SEC_TYPE>({
                 {/* {user?.userType === 'admin' && <NavProjects projects={projects} />} */}
             </SidebarContent>
 
-            <SidebarFooter>{user && <NavUser user={user} onLogout={onLogout} />}</SidebarFooter>
+            <SidebarFooter>
+                {user && (
+                    <NavUser
+                        onNotificationClick={onNotificationClick}
+                        user={user}
+                        onLogout={onLogout}
+                    />
+                )}
+            </SidebarFooter>
             <SidebarRail />
         </Sidebar>
     )
